@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Atyaf
+Name[ar]=أطياف
+Comment=Independent application profiles for Linux
+Comment[ar]=إدارة ملفات شخصية مستقلة للبرامج على Linux
+Exec=atyaf
+Icon=com.h.atyaf
+Terminal=false
+Categories=Utility;
+StartupWMClass=com.h.atyaf

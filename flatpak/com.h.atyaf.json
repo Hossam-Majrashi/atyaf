@@ -1,0 +1,44 @@
+{
+  "app-id": "com.h.atyaf",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "50",
+  "sdk": "org.gnome.Sdk",
+  "command": "atyaf",
+  "finish-args": [
+    "--share=ipc",
+    "--share=network",
+    "--socket=x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--filesystem=host",
+    "--talk-name=org.freedesktop.Flatpak"
+  ],
+  "modules": [
+    {
+      "name": "atyaf",
+      "buildsystem": "simple",
+      "build-commands": [
+        "mkdir -p /app/lib/atyaf /app/bin",
+        "cp -a bundle/. /app/lib/atyaf/",
+        "ln -s /app/lib/atyaf/atyaf /app/bin/atyaf",
+        "install -Dm644 com.h.atyaf.desktop /app/share/applications/com.h.atyaf.desktop",
+        "install -Dm644 com.h.atyaf.metainfo.xml /app/share/metainfo/com.h.atyaf.metainfo.xml",
+        "install -Dm644 icon-512.png /app/share/icons/hicolor/512x512/apps/com.h.atyaf.png",
+        "install -Dm644 icon-128.png /app/share/icons/hicolor/128x128/apps/com.h.atyaf.png",
+        "install -Dm644 icon-64.png /app/share/icons/hicolor/64x64/apps/com.h.atyaf.png",
+        "install -Dm644 icon-256.png /app/share/icons/hicolor/256x256/apps/com.h.atyaf.png",
+        "install -Dm644 LICENSE /app/share/licenses/atyaf/LICENSE"
+      ],
+      "sources": [
+        {"type": "dir", "path": "../build/linux/x64/release/bundle", "dest": "bundle"},
+        {"type": "file", "path": "com.h.atyaf.desktop"},
+        {"type": "file", "path": "com.h.atyaf.metainfo.xml"},
+        {"type": "file", "path": "../assets/icon/icon-512.png"},
+        {"type": "file", "path": "../assets/icon/icon-128.png"},
+        {"type": "file", "path": "../assets/icon/icon-64.png"},
+        {"type": "file", "path": "../snap/gui/atyaf.png", "dest-filename": "icon-256.png"},
+        {"type": "file", "path": "../LICENSE"}
+      ]
+    }
+  ]
+}

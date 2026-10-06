@@ -1,0 +1,37 @@
+name: atyaf
+description: Independent application profiles and portable application management for Linux.
+publish_to: none
+version: 1.1.0+2
+environment:
+  sdk: ^3.13.5
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  shared_preferences: ^2.5.3
+  window_manager: ^0.5.1
+  url_launcher: ^6.3.2
+  file_picker: ^10.3.3
+  sqlite3: ^2.9.4
+  path: ^1.9.1
+  uuid: ^4.5.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  icons_launcher: 3.1.0
+flutter:
+  generate: true
+  uses-material-design: true
+  assets:
+    - assets/icon/icon.png
+    - assets/linux/archive_helper.py
+    - assets/linux/process_helper.py
+    - assets/linux/desktop_icon_helper.py
+icons_launcher:
+  image_path: assets/icon/icon.png
+  platforms:
+    linux:
+      enable: true

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.h.atyaf</id>
+  <name>Atyaf</name>
+  <name xml:lang="ar">أطياف</name>
+  <summary>Manage independent application profiles on Linux</summary>
+  <summary xml:lang="ar">إدارة ملفات شخصية مستقلة للبرامج على Linux</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <description><p>Atyaf manages Linux executables and portable applications with independent configuration, data, cache and state paths for each profile.</p><p>Launch profiles, inspect process output and create independent application menu shortcuts. Profile separation is not a security sandbox.</p></description>
+  <launchable type="desktop-id">com.h.atyaf.desktop</launchable>
+  <url type="homepage">https://hossam-majrashi.github.io/Works/</url>
+  <developer id="hossam-majrashi.github.io"><name>حسام حسن مجرشي</name></developer>
+  <provides><binary>atyaf</binary></provides>
+  <content_rating type="oars-1.1"/>
+</component>

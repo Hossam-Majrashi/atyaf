@@ -1,0 +1,73 @@
+# Flutter / Dart generated files and dependency caches
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+.widget_preview/
+/build/
+/coverage/
+/linux/flutter/ephemeral/
+app.*.symbols
+app.*.map.json
+
+# Linux release packages and Flatpak build state
+# Publish binaries as GitHub Release assets, not as source files.
+/dist/
+/.flatpak-builder/
+*.AppImage
+*.appimage
+*.deb
+*.rpm
+*.flatpak
+*.pkg.tar.*
+
+# Local IDE settings and temporary editor files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+CMakeUserPresets.json
+
+# Python bytecode and local virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local credentials; keep shareable environment templates
+.env
+.env.*
+!.env.example
+!.env.sample
+.secrets/
+
+# Runtime data and diagnostics can contain personal information
+/com.h.atyaf/
+*.log
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.sqlite.lock
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+*.sqlite3.lock
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Filesystem / desktop metadata
+.DS_Store
+Thumbs.db
+.Trash-*/
+
+# Keep pubspec.lock, .metadata, source code, translations, tests,
+# application icons, Linux manifests and packaging scripts in Git.
