@@ -12,26 +12,31 @@ class ManagedImportService {
   final RuntimeService runtime;
   final ManagedStorageService storage;
 
-  Future<Application> add(String name, ManagedSource source, String relative) =>
-      repository.withExclusiveLock(() async {
-        if (name.trim().isEmpty) {
-          throw ArgumentError('Name required');
-        }
-        final id = const Uuid().v4();
-        final destination = p.join(runtime.root, 'applications', id, 'current');
-        final app = Application(
-          id: id,
-          name: name.trim(),
-          executable: p.join(destination, relative),
-          executableRelative: relative,
-          portableRoot: destination,
-        );
-        await storage.replace(
-          source,
-          destination,
-          relative,
-          commit: () => repository.saveApplication(app),
-        );
-        return app;
-      });
+  Future<Application> add(
+    String name,
+    ManagedSource source,
+    String relative, {
+    String? iconPng,
+  }) => repository.withExclusiveLock(() async {
+    if (name.trim().isEmpty) {
+      throw ArgumentError('Name required');
+    }
+    final id = const Uuid().v4();
+    final destination = p.join(runtime.root, 'applications', id, 'current');
+    final app = Application(
+      id: id,
+      name: name.trim(),
+      executable: p.join(destination, relative),
+      executableRelative: relative,
+      portableRoot: destination,
+      iconPng: iconPng,
+    );
+    await storage.replace(
+      source,
+      destination,
+      relative,
+      commit: () => repository.saveApplication(app),
+    );
+    return app;
+  });
 }

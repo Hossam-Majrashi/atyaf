@@ -6,5 +6,8 @@ abstract interface class ProcessService {
   Future<void> launch(Application application, Profile profile);
   Future<void> stop(String profileId, {bool force = false});
   Future<void> restart(Application application, Profile profile);
+
+  /// Wait for locally supervised exits to finish persisting both log streams.
+  Future<void> waitForPendingExits();
   void reconcile();
 }

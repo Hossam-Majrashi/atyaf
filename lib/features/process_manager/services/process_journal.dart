@@ -32,6 +32,9 @@ class ProcessJournal {
       'stop': DateTime.now().toIso8601String(),
       'exitCode': code,
       'crashed': ![0, -15, -9, 143, 137].contains(code),
+      'interrupted': false,
+      // A genuine final failure is new even if an earlier interruption was cleared.
+      'diagnosticsDismissed': false,
     });
   }
 

@@ -84,6 +84,7 @@ class UpdateService {
       executableRelative: relative,
       portableRoot: destination,
       wmClass: app.wmClass,
+      iconPng: app.iconPng,
     );
     // Shortcuts invoke the stable profile ID, not this executable path.
     await storage.replace(

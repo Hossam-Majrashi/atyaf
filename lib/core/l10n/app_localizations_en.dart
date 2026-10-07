@@ -75,6 +75,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseExecutable => 'Choose an executable';
 
   @override
+  String get applicationIcon => 'Application icon';
+
+  @override
+  String get chooseApplicationIcon => 'Choose an application icon';
+
+  @override
+  String get applicationIconHelp =>
+      'Choose PNG, JPG, SVG or other supported images. A PNG copy is saved (still frame for animations). The folder button accepts folders only.';
+
+  @override
+  String supportedImageFormats(String formats) {
+    return 'Image formats available on this device: $formats';
+  }
+
+  @override
+  String get chooseImageFolder => 'Choose project / image folder';
+
+  @override
+  String get chooseImageFile => 'Choose image from device';
+
+  @override
+  String get automaticIcon => 'Use automatic icon';
+
+  @override
+  String get searchImages => 'Search image paths (press Enter)';
+
+  @override
+  String get noProjectImages =>
+      'No matching images found. Choose an image directly from your device or another image folder, or use the automatic icon.';
+
+  @override
+  String get imageUnavailable =>
+      'This image is damaged, unsupported, or exceeds the size limit (16 MiB / 8192 pixels).';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String imageCount(int count) {
+    return '$count images · scroll to browse';
+  }
+
+  @override
+  String get launchAdvice => 'Launch diagnostics and suggestions';
+
+  @override
+  String get lostExitAdvice =>
+      'The supervisor was interrupted before recording the exit status. An unavailable exit code does not prove that the application crashed. Old missing codes cannot be recovered from these logs.';
+
+  @override
+  String get certificateAdvice =>
+      'Chromium error -202 means the certificate authority is not trusted. Check the failing site’s certificate chain, system trust store and any HTTPS-inspecting proxy. This log does not identify the site. Do not disable certificate verification or import an unverified certificate.';
+
+  @override
+  String get walletAdvice =>
+      'The KDE wallet could not be contacted. Check whether KWallet is enabled and available on the host. If you intentionally use an active Secret Service instead, Electron/Chromium profiles can explicitly select it in the profile editor. Changing stores may require signing in again; plaintext storage is not recommended.';
+
+  @override
+  String get desktopHandlerAdvice =>
+      'The integer warning comes from xdg-open’s old KDE fallback. Updated Atyaf preserves the host KDE session version. Restart the profile with the updated build to regenerate its desktop handler.';
+
+  @override
+  String get useSecretService => 'Electron/Chromium: use Secret Service';
+
+  @override
+  String get secretServiceConfirm =>
+      'Add --password-store=gnome-libsecret to this profile’s arguments? Use only with a compatible Electron/Chromium application and an active host Secret Service (such as GNOME Keyring). This changes the encryption backend and may require signing in again. Existing credentials are not migrated or deleted. Save and restart the profile to apply; KWallet and system settings are not changed.';
+
+  @override
   String get name => 'Name';
 
   @override
@@ -194,6 +263,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'XDG paths are isolated by default; HOME is not changed. Use application-specific flags for apps that ignore XDG. Arguments and environment values can use {config}, {data}, {cache}, {state}, {temp}, {home} and {profile}. This is not a security sandbox.';
 
   @override
+  String get windowControlsHelp =>
+      'Default profiles inherit system window buttons for GTK/Electron apps such as VS Code and Antigravity without leaving Wayland or changing data and explicit preferences. Custom paths and GSettings setups stay untouched. X11 below is an optional GTK alternative, not the primary fix for Electron editors.';
+
+  @override
+  String get useX11WindowControls => 'GTK: try X11 window controls';
+
+  @override
+  String get x11Unavailable =>
+      'This option requires a host DISPLAY for an X11 or XWayland session.';
+
+  @override
+  String get x11WindowControlsConfirm =>
+      'Set GDK_BACKEND=x11 for this profile only? Use with GTK applications compatible with X11/XWayland; scaling or Wayland integration may differ. X11 provides weaker window isolation than Wayland. Buttons are not guaranteed for non-resizable dialogs or custom title bars. Other environment values, arguments and profile data remain unchanged. Save and restart the profile to apply. To undo, remove GDK_BACKEND from the environment or change it to wayland.';
+
+  @override
   String get invalidInput =>
       'Enter a name and valid JSON. Paths must be absolute. Environment keys must be valid identifiers.';
 
@@ -291,7 +375,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errors => 'Errors and diagnostics';
 
   @override
-  String get noErrors => 'No application errors or failed launches recorded';
+  String get noErrors => 'No new application errors or failed launches';
+
+  @override
+  String get clearErrors => 'Clear errors';
+
+  @override
+  String get clearErrorsConfirm =>
+      'Delete the displayed Atyaf errors and remove the current failed launches from diagnostics? Applications and profiles are unchanged; launch history and output files remain in profile history. Export reports first if you need them. Errors arriving after this confirmation opens are not cleared.';
+
+  @override
+  String get errorsCleared =>
+      'Previous diagnostics cleared. New errors will appear automatically.';
 
   @override
   String get applicationErrors => 'Atyaf errors';

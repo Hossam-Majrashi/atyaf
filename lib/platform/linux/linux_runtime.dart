@@ -7,6 +7,7 @@ import '../../shared/models/library_models.dart';
 import '../../shared/services/runtime_service.dart';
 import 'linux_commands.dart';
 import 'linux_desktop_handlers.dart';
+import 'linux_window_preferences.dart';
 
 class LinuxRuntime implements RuntimeService {
   LinuxRuntime({Map<String, String>? environment})
@@ -19,10 +20,26 @@ class LinuxRuntime implements RuntimeService {
     root = p.join(dataHome, 'com.h.atyaf');
   }
   final Map<String, String> host;
+  final _windowPreferencesReady = <String>{};
+
+  bool inheritsWindowPreferences(Profile profile) =>
+      profile.paths['config']?.isNotEmpty != true &&
+      !profile.environment.containsKey('XDG_CONFIG_HOME') &&
+      !profile.environment.containsKey('XDG_DATA_DIRS') &&
+      !profile.environment.containsKey('XDG_CURRENT_DESKTOP') &&
+      !profile.environment.containsKey('GSETTINGS_BACKEND') &&
+      !['GSETTINGS_SCHEMA_DIR', 'DCONF_PROFILE'].any(
+        (key) =>
+            profile.environment.containsKey(key) ||
+            host[key]?.isNotEmpty == true,
+      );
   @override
   late final String root, dataHome;
   String xdg(String key, String fallback) =>
       p.isAbsolute(host[key] ?? '') ? host[key]! : fallback;
+  @override
+  bool get hasX11Display => host['DISPLAY']?.trim().isNotEmpty == true;
+
   String get configHome =>
       xdg('XDG_CONFIG_HOME', p.join(host['HOME']!, '.config'));
   String get cacheHome =>
@@ -130,6 +147,13 @@ finally:
       'TMPDIR': paths['temp']!,
       'HOME': paths['home']!,
     };
+    if (inheritsWindowPreferences(profile) &&
+        _windowPreferencesReady.contains(profile.id)) {
+      result['GSETTINGS_SCHEMA_DIR'] = p.join(
+        profileRoot(profile.id),
+        'window-controls',
+      );
+    }
     for (final e in profile.environment.entries) {
       if (!RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(e.key) ||
           e.value.contains('\x00')) {
@@ -159,6 +183,7 @@ finally:
 
   @override
   Future<void> prepare(Profile profile) async {
+    _windowPreferencesReady.remove(profile.id);
     final values = environmentFor(profile);
     final defaultTemp = shortTemporary(profile.id);
     if (values['TMPDIR'] == defaultTemp) {
@@ -188,6 +213,13 @@ finally:
       await Directory(values['HOME']!).create(recursive: true);
     }
     await desktopHandlers(profile).prepare();
+    if (inheritsWindowPreferences(profile) &&
+        await LinuxWindowPreferences.prepare(root, profileRoot(profile.id), {
+          ...host,
+          'XDG_CONFIG_HOME': configHome,
+        })) {
+      _windowPreferencesReady.add(profile.id);
+    }
   }
 
   @override

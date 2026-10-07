@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:atyaf/core/l10n/app_localizations_ar.dart';
+import 'package:atyaf/core/l10n/app_localizations_en.dart';
 import 'package:atyaf/features/home/services/library_controller.dart';
+import 'package:atyaf/screens/desktop/diagnostic_reports.dart';
 import 'package:atyaf/platform/linux/linux_archives.dart';
 import 'package:atyaf/platform/linux/linux_backup.dart';
 import 'package:atyaf/platform/linux/linux_desktop_entries.dart';
@@ -63,6 +66,284 @@ void main() {
     library.dispose();
     repository.close();
     await temporary.delete(recursive: true);
+  });
+
+  test('Project gallery scans nested images, confines links, and normalizes previews without executing files', () async {
+    final root = Directory('${temporary.path}/project العربية');
+    final nested = Directory('${root.path}/assets/deep');
+    await nested.create(recursive: true);
+    await File('assets/icon/icon.png').copy('${nested.path}/logo.PNG');
+    await File('${root.path}/broken.png').writeAsString('not an image');
+    await File('${root.path}/other.svg').writeAsString(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="16"><rect width="32" height="16" fill="red"/></svg>',
+    );
+    await File('${root.path}/readme.txt').writeAsString('not an image');
+    await Link('${root.path}/outside.png')
+        .create(File('assets/icon/icon.png').absolute.path);
+    await Link('${root.path}/loop').create(root.path);
+    await Link('${root.path}/internal.png').create('assets/deep/logo.PNG');
+    final paths = await entries.scanImages(root.path);
+    expect(paths, [
+      'assets/deep/logo.PNG',
+      'broken.png',
+      'internal.png',
+      'other.svg',
+    ]);
+    final previews = await entries.previewImages(root.path, paths);
+    expect(previews[1], isNull);
+    for (final index in [0, 2, 3]) {
+      final bytes = base64Decode(previews[index]!);
+      expect(ByteData.sublistView(bytes).getUint32(16), lessThanOrEqualTo(96));
+    }
+    final chosen = (await entries.previewImages(root.path, [
+      'other.svg',
+    ], size: 512)).single!;
+    final bytes = base64Decode(chosen);
+    expect(ByteData.sublistView(bytes).getUint32(16), 512);
+    expect(ByteData.sublistView(bytes).getUint32(20), 256);
+    await expectLater(
+      entries.previewImages(root.path, ['../escape.png']),
+      throwsA(isA<FileSystemException>()),
+    );
+    await expectLater(
+      entries.previewImages(root.path, ['outside.png']),
+      throwsA(isA<FileSystemException>()),
+    );
+    await expectLater(
+      entries.scanImages('${root.path}/missing'),
+      throwsA(isA<FileSystemException>()),
+    );
+    expect(
+      await entries.scanImages(
+        (await Directory('${root.path}/empty').create()).path,
+      ),
+      isEmpty,
+    );
+  });
+
+  test('Installed image extensions are shared by gallery discovery and include non-PNG codecs', () async {
+    final formats = await entries.imageExtensions();
+    expect(formats, containsAll(['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg']));
+    expect(formats.toSet().length, formats.length);
+    final root = await Directory('${temporary.path}/format aliases').create();
+    for (final extension in formats) {
+      await File('${root.path}/sample.${extension.toUpperCase()}')
+          .writeAsString('not an image');
+    }
+    expect((await entries.scanImages(root.path)).length, formats.length);
+  });
+
+  test('JPEG, GIF, BMP, SVG and PNG sources decode into independent static PNG copies', () async {
+    final root = await Directory('${temporary.path}/multiple formats').create();
+    await File('assets/icon/icon-64.png').copy('${root.path}/logo.png');
+    await File('${root.path}/logo.svg').writeAsString(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32"><rect width="64" height="32" fill="blue"/></svg>',
+    );
+    await File('${root.path}/logo.gif').writeAsBytes(
+      base64Decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'),
+    );
+    // Tiny fixed JPEG and BMP fixtures; no external image converter required.
+    await File('${root.path}/logo.JPEG').writeAsBytes(
+      base64Decode(
+        '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAACAAIDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAVAQEBAAAAAAAAAAAAAAAAAAAHCf/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/ADoDFU3/2Q==',
+      ),
+    );
+    final bmp = ByteData(58)
+      ..setUint8(0, 66)
+      ..setUint8(1, 77)
+      ..setUint32(2, 58, Endian.little)
+      ..setUint32(10, 54, Endian.little)
+      ..setUint32(14, 40, Endian.little)
+      ..setInt32(18, 1, Endian.little)
+      ..setInt32(22, 1, Endian.little)
+      ..setUint16(26, 1, Endian.little)
+      ..setUint16(28, 24, Endian.little)
+      ..setUint32(34, 4, Endian.little)
+      ..setUint8(56, 255);
+    await File('${root.path}/logo.bmp').writeAsBytes(bmp.buffer.asUint8List());
+    for (final name in [
+      'logo.JPEG',
+      'logo.gif',
+      'logo.bmp',
+      'logo.svg',
+      'logo.png',
+    ]) {
+      final source = File('${root.path}/$name');
+      final original = await source.readAsBytes();
+      final encoded = await entries.readImage(source.path);
+      expect(encoded, isNotNull, reason: name);
+      final bytes = base64Decode(encoded!);
+      expect(bytes.take(8), [137, 80, 78, 71, 13, 10, 26, 10]);
+      expect(ByteData.sublistView(bytes).getUint32(16), lessThanOrEqualTo(512));
+      expect(ByteData.sublistView(bytes).getUint32(20), lessThanOrEqualTo(512));
+      expect(await source.readAsBytes(), original);
+      final app = Application(
+        id: 'app',
+        name: name,
+        executable: '/usr/bin/true',
+        iconPng: encoded,
+      );
+      repository.saveApplication(app);
+      await source.delete();
+      expect(repository.applications.single.iconPng, encoded);
+    }
+  });
+
+  test('Direct PNG file choice normalizes and persists independently of its original path without changing profiles', () async {
+    final root = await Directory('${temporary.path}/personal pictures')
+        .create();
+    final source = await File('assets/icon/icon.png')
+        .copy('${root.path}/photo "quoted"% صورة.PNG');
+    final originalBytes = await source.readAsBytes();
+    final encoded = (await entries.readImage(source.path))!;
+    final bytes = base64Decode(encoded);
+    expect(ByteData.sublistView(bytes).getUint32(16), 512);
+    expect(ByteData.sublistView(bytes).getUint32(20), 512);
+    expect(bytes.length, lessThanOrEqualTo(2 * 1024 * 1024));
+    expect(await source.readAsBytes(), originalBytes);
+    const profile = Profile(
+      id: 'direct',
+      applicationId: 'app',
+      name: 'Direct',
+      arguments: ['unchanged'],
+      environment: {'KEEP': 'unchanged'},
+    );
+    repository.saveProfile(profile);
+    repository.saveApplication(
+      Application(
+        id: 'app',
+        name: 'App',
+        executable: '/usr/bin/true',
+        iconPng: encoded,
+      ),
+    );
+    await source.delete();
+    final reopened = LinuxRepository(repository.path);
+    try {
+      final saved = reopened.applications.single;
+      expect(saved.iconPng, encoded);
+      await entries.create(saved, profile);
+      expect(await File(entries.iconPath(profile.id)).readAsBytes(), bytes);
+      expect(reopened.profiles.single.toJson(), profile.toJson());
+    } finally {
+      reopened.close();
+    }
+  });
+
+  test('Direct image decoding enforces source limits, does not execute files, and rejects escaping links and relative paths', () async {
+    final root = await Directory('${temporary.path}/selected files').create();
+    final marker = File('${root.path}/must-not-run');
+    final invalid = File('${root.path}/broken.png');
+    await invalid.writeAsString('#!/bin/sh\ntouch "${marker.path}"\n');
+    expect(await entries.readImage(invalid.path), isNull);
+    expect(await marker.exists(), isFalse);
+    expect(await entries.readImage('${root.path}/missing.png'), isNull);
+    expect(await entries.readImage(root.path), isNull);
+    final large = File('${root.path}/oversized.png');
+    final handle = await large.open(mode: FileMode.write);
+    try {
+      await handle.truncate(16 * 1024 * 1024 + 1);
+    } finally {
+      await handle.close();
+    }
+    expect(await entries.readImage(large.path), isNull);
+    final dimensions = File('${root.path}/dimensions.svg');
+    await dimensions.writeAsString(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="9000" height="32"><rect width="9000" height="32" fill="green"/></svg>',
+    );
+    expect(await entries.readImage(dimensions.path), isNull);
+    final link = Link('${root.path}/outside.png');
+    await link.create(File('assets/icon/icon.png').absolute.path);
+    await expectLater(
+      entries.readImage(link.path),
+      throwsA(isA<FileSystemException>()),
+    );
+    await expectLater(entries.readImage('relative.png'), throwsArgumentError);
+    await expectLater(
+      entries.readImage('${root.path}/bad\x00.png'),
+      throwsArgumentError,
+    );
+  });
+
+  test('Selected icon persists independently and refreshes existing shortcuts only', () async {
+    final root = await Directory('${temporary.path}/logos').create();
+    final selected = File('${root.path}/chosen.svg');
+    await selected.writeAsString(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="red"/></svg>',
+    );
+    final encoded = (await entries.previewImages(root.path, [
+      'chosen.svg',
+    ], size: 512)).single!;
+    final app = Application(
+      id: 'app',
+      name: 'App',
+      executable: '/usr/bin/true',
+      iconPng: encoded,
+    );
+    repository.saveApplication(app);
+    expect(repository.applications.single.iconPng, encoded);
+    expect(
+      Application.fromJson({...app.toJson(), 'iconPng': null}).iconPng,
+      isNull,
+    );
+    expect(
+      () => Application.fromJson({...app.toJson(), 'iconPng': 'bad'}),
+      throwsFormatException,
+    );
+    const present = Profile(
+      id: 'present',
+      applicationId: 'app',
+      name: 'Present',
+    );
+    const absent = Profile(id: 'absent', applicationId: 'app', name: 'Absent');
+    await entries.create(app, present);
+    await selected.delete();
+    await entries.refreshIcons(app, [present, absent]);
+    expect(
+      await File(entries.iconPath(present.id)).readAsBytes(),
+      base64Decode(encoded),
+    );
+    expect(await File(entries.filePath(absent.id)).exists(), isFalse);
+    expect(await File(entries.iconPath(absent.id)).exists(), isFalse);
+  });
+
+  test('Launch reports explain certificate, wallet, handler and interrupted status without altering original output', () async {
+    const profile = Profile(id: 'advice', applicationId: 'app', name: 'Advice');
+    repository.saveProfile(profile);
+    final out = File('${runtime.profileRoot(profile.id)}/logs/out');
+    final err = File('${runtime.profileRoot(profile.id)}/logs/err');
+    await out.parent.create(recursive: true);
+    await out.writeAsString('original output');
+    final stderr =
+        'net_error -202\nError contacting kwalletd6 (isEnabled)\n/usr/bin/xdg-open: line 554: test: : integer expected\n${'x' * (300 * 1024)}\ncomplete ending';
+    await err.writeAsString(stderr);
+    final record = <String, dynamic>{
+      'pid': 123,
+      'start': '2026-10-06T06:11:12',
+      'stop': '2026-10-06T06:12:35',
+      'exitCode': null,
+      'interrupted': true,
+      'stdout': out.path,
+      'stderr': err.path,
+    };
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      final complete = await library.logs.completeReport(
+        await launchReport(l, library, profile, record),
+      );
+      for (final advice in [
+        l.lostExitAdvice,
+        l.certificateAdvice,
+        l.walletAdvice,
+        l.desktopHandlerAdvice,
+      ]) {
+        expect(complete, contains(advice));
+      }
+      expect(complete, contains(stderr));
+      expect(complete, contains('original output'));
+      expect(logAdvice(l, 'net_error -2020'), isEmpty);
+      expect(logAdvice(l, 'handshake failed; net_error -201'), isEmpty);
+      expect(logAdvice(l, 'normal output'), isEmpty);
+    }
   });
 
   test(
@@ -238,6 +519,8 @@ print(json.dumps([sys.argv[1:],dict(os.environ)],ensure_ascii=False))
     await Process.run('chmod', ['700', handler.path]);
     runtime.host['PATH'] = '${bin.path}:/usr/bin:/bin';
     runtime.host['BROWSER'] = 'system-browser';
+    runtime.host['KDE_SESSION_VERSION'] = '6';
+    runtime.host['KDE_SESSION_UID'] = '1000';
     runtime.host['UNRELATED_HOST_SECRET'] = 'not-for-browser';
     const profile = Profile(
       id: 'links',
@@ -272,6 +555,8 @@ print(json.dumps([sys.argv[1:],dict(os.environ)],ensure_ascii=False))
     expect(output[1]['XDG_DATA_HOME'], runtime.host['XDG_DATA_HOME']);
     expect(output[1]['HOME'], temporary.path);
     expect(output[1]['BROWSER'], 'system-browser');
+    expect(output[1]['KDE_SESSION_VERSION'], '6');
+    expect(output[1]['KDE_SESSION_UID'], '1000');
     expect((output[1] as Map).containsKey('PROFILE_SECRET'), isFalse);
     expect((output[1] as Map).containsKey('UNRELATED_HOST_SECRET'), isFalse);
     expect(
@@ -299,6 +584,42 @@ print(json.dumps([sys.argv[1:],dict(os.environ)],ensure_ascii=False))
           0x1ff,
       0x180,
     );
+  });
+
+  test('Real xdg-open selects KDE 6 handler instead of legacy integer-warning fallback', () async {
+    final bin = await Directory('${temporary.path}/KDE handlers').create();
+    final handler = File('${bin.path}/kde-open');
+    await handler.writeAsString('''#!/usr/bin/python3
+import json,os,sys
+print(json.dumps([sys.argv[1:],os.environ.get('KDE_SESSION_VERSION'),os.environ.get('XDG_CONFIG_HOME')]))
+''');
+    final legacy = File('${bin.path}/kfmclient');
+    await legacy.writeAsString(
+      '#!/bin/sh\necho legacy-path-was-used >&2\nexit 1\n',
+    );
+    for (final file in [handler, legacy]) {
+      await Process.run('chmod', ['700', file.path]);
+    }
+    runtime.host['PATH'] = '${bin.path}:/usr/bin:/bin';
+    runtime.host['XDG_CURRENT_DESKTOP'] = 'KDE';
+    runtime.host['KDE_SESSION_VERSION'] = '6';
+    const profile = Profile(id: 'kde', applicationId: 'app', name: 'KDE');
+    repository.saveProfile(profile);
+    await runtime.prepare(profile);
+    const url = 'https://example.org/oauth?state=exact%20url&code=abc';
+    final result = await Process.run(
+      runtime.desktopHandlers(profile).opener,
+      [url],
+      environment: runtime.environmentFor(profile),
+      includeParentEnvironment: false,
+    );
+    expect(result.exitCode, 0, reason: result.stderr.toString());
+    expect(result.stderr, isEmpty);
+    expect(jsonDecode(result.stdout.toString()), [
+      [url],
+      '6',
+      runtime.host['XDG_CONFIG_HOME'],
+    ]);
   });
 
   test(

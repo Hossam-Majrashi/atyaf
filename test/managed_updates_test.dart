@@ -448,6 +448,54 @@ void main() {
     expect(repository.applications, isEmpty);
   });
 
+  test('Chosen archive icon survives discarded staging, application replacement and backup restore', () async {
+    final input = await folder('icon-source', 'old');
+    final logo = File('${input.path}/images/nested/logo.png');
+    await logo.parent.create(recursive: true);
+    await File('assets/icon/icon.png').copy(logo.path);
+    final archive = await tar(input, 'icons', 'gz');
+    final source = await storage.stage(archive, archive: true);
+    final entries = LinuxDesktopEntries(
+      runtime,
+      await File('assets/icon/icon.png').readAsBytes(),
+    );
+    expect(await entries.scanImages(source.root), ['images/nested/logo.png']);
+    final encoded = (await entries.previewImages(source.root, [
+      'images/nested/logo.png',
+    ], size: 512)).single!;
+    final app = await applications.addManaged(
+      'Chosen',
+      source,
+      'bin/studio',
+      iconPng: encoded,
+    );
+    await storage.discard(source);
+    await input.delete(recursive: true);
+    await File(archive).delete();
+    final next = await storage.stage(
+      (await folder('icon-update', 'new')).path,
+      archive: false,
+    );
+    final updated = await updates.update(app, next, 'bin/studio');
+    await storage.discard(next);
+    expect(updated.iconPng, encoded);
+    expect(
+      await File('${updated.portableRoot}/images/nested/logo.png').exists(),
+      isFalse,
+    );
+    final backup = LinuxBackup(runtime, repository, archives, processes);
+    final destination = '${temporary.path}/with-icon.tar.gz';
+    await backup.export(destination);
+    repository.saveApplication(
+      Application.fromJson({...updated.toJson(), 'iconPng': null}),
+    );
+    await backup.restore(destination);
+    expect(repository.applications.single.iconPng, encoded);
+    const profile = Profile(id: 'chosen', applicationId: 'app', name: 'Chosen');
+    await entries.create(repository.applications.single, profile);
+    expect(await File(entries.iconPath(profile.id)).exists(), isTrue);
+  });
+
   test('Managed applications are included in backup/restore, not just legacy portable roots', () async {
     final app = await initial();
     final backup = LinuxBackup(runtime, repository, archives, processes);

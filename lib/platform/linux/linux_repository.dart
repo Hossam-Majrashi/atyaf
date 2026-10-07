@@ -94,6 +94,37 @@ class LinuxRepository implements LibraryRepository {
   @override
   void recordError(Map<String, dynamic> record) => _save('errors', record);
   @override
+  void clearDiagnostics({
+    required Iterable<String> errorIds,
+    required Iterable<Map<String, dynamic>> failedLaunches,
+  }) {
+    db.execute('BEGIN IMMEDIATE');
+    try {
+      for (final id in errorIds.toSet()) {
+        db.execute('DELETE FROM errors WHERE id=?', [id]);
+      }
+      for (final record in failedLaunches) {
+        if (record['stop'] == null ||
+            record['diagnosticsDismissed'] == true ||
+            (record['crashed'] != true && record['interrupted'] != true)) {
+          continue;
+        }
+        // Compare the captured payload: an exit/failure arriving while the
+        // confirmation was open is a new diagnostic and must stay visible.
+        db.execute('UPDATE launches SET payload=? WHERE id=? AND payload=?', [
+          jsonEncode({...record, 'diagnosticsDismissed': true}),
+          record['id'],
+          jsonEncode(record),
+        ]);
+      }
+      db.execute('COMMIT');
+    } catch (_) {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  @override
   void updateLaunch(String id, Map<String, dynamic> values) {
     final rows = db.select('SELECT payload FROM launches WHERE id=?', [id]);
     if (rows.isNotEmpty) {

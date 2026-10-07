@@ -134,8 +134,9 @@ class _AtyafAppState extends State<AtyafApp> with WindowListener {
         if (profiles.any((p) => widget.library.processes.isRunning(p.id))) {
           return;
         }
-        await Future<void>.delayed(const Duration(milliseconds: 300));
       }
+      // A terminated PID is not proof that output and exit metadata are saved.
+      await widget.library.processes.waitForPendingExits();
       await windowManager.destroy();
     } catch (error, stack) {
       widget.library.reportError(error, stack);

@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:atyaf/core/l10n/app_localizations.dart';
+import 'package:atyaf/screens/desktop/logs_screen.dart';
+import 'package:atyaf/screens/desktop/errors_screen.dart';
 import 'package:atyaf/features/home/services/library_controller.dart';
 import 'package:atyaf/features/settings/services/preferences_service.dart';
 import 'package:atyaf/main.dart';
@@ -105,12 +108,245 @@ void main() {
     await temporary.delete(recursive: true);
   });
 
+  testWidgets(
+    'Failed diagnostic deletion reports the error and preserves previous diagnostics',
+    (tester) async {
+      repository.db.execute(
+        "CREATE TRIGGER reject_dismissal BEFORE UPDATE ON launches BEGIN SELECT RAISE(ABORT, 'Deletion rejected'); END",
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ErrorsScreen(library: library),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear errors'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear errors').last);
+      for (
+        var attempt = 0;
+        attempt < 150 && repository.errors.length == 1;
+        attempt++
+      ) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 15)),
+        );
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      await tester.pumpAndSettle();
+      expect(repository.errors.length, 2);
+      expect(
+        repository.errors.any(
+          (record) =>
+              record['detail'].toString().contains('Atyaf operation failed'),
+        ),
+        isTrue,
+      );
+      expect(
+        repository.errors.any(
+          (record) => record['detail'].toString().contains('Deletion rejected'),
+        ),
+        isTrue,
+      );
+      expect(
+        repository.history('profile').single['diagnosticsDismissed'],
+        isNull,
+      );
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final language in ['en', 'ar']) {
+    testWidgets(
+      'Logs $language explain TLS, wallet, desktop handler and lost exit status',
+      (tester) async {
+        final l = lookupAppLocalizations(Locale(language));
+        repository.updateLaunch('failed', {
+          'interrupted': true,
+          'exitCode': null,
+          'crashed': false,
+        });
+        await tester.runAsync(
+          () => File('${library.runtime.profileRoot('profile')}/logs/stderr')
+              .writeAsString(
+                'net_error -202\nError contacting kwalletd6\n/usr/bin/xdg-open: test: : integer expected',
+              ),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: Locale(language),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: LogsScreen(
+              library: library,
+              profile: repository.profiles.single,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(ExpansionTile));
+        await tester.pumpAndSettle();
+        for (
+          var attempt = 0;
+          attempt < 100 && find.text(l.certificateAdvice).evaluate().isEmpty;
+          attempt++
+        ) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        for (final advice in [
+          l.lostExitAdvice,
+          l.certificateAdvice,
+          l.walletAdvice,
+          l.desktopHandlerAdvice,
+        ]) {
+          expect(find.text(advice), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
     for (final size in [
       const Size(800, 600),
       const Size(1100, 760),
       const Size(1600, 900),
     ]) {
+      testWidgets(
+        'Clear diagnostics $language $size confirms, cancels, and preserves errors arriving during confirmation',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final l = lookupAppLocalizations(Locale(language));
+          final originalErrors = repository.errors;
+          final originalHistory = repository.history('profile');
+          final originalApp = repository.applications.single.toJson();
+          final originalProfile = repository.profiles.single.toJson();
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: Locale(language),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: ErrorsScreen(library: library),
+            ),
+          );
+          await tester.pumpAndSettle();
+          Future<void> waitFor(bool Function() ready) async {
+            for (var attempt = 0; attempt < 150; attempt++) {
+              await tester.runAsync(
+                () => Future<void>.delayed(const Duration(milliseconds: 15)),
+              );
+              await tester.pump(const Duration(milliseconds: 20));
+              if (ready()) {
+                await tester.pumpAndSettle();
+                return;
+              }
+            }
+            fail('Diagnostic deletion did not complete');
+          }
+
+          await tester.tap(find.text(l.clearErrors));
+          await tester.pumpAndSettle();
+          expect(find.text(l.clearErrorsConfirm), findsOneWidget);
+          await tester.tap(find.text(l.cancel));
+          await tester.pumpAndSettle();
+          expect(repository.errors, originalErrors);
+          expect(repository.history('profile'), originalHistory);
+          await tester.tap(find.text(l.clearErrors));
+          await tester.pumpAndSettle();
+          library.reportError(
+            StateError('New diagnostic during confirmation'),
+            StackTrace.current,
+          );
+          repository.recordLaunch({
+            ...originalHistory.single,
+            'id': 'new-failure',
+            'pid': 632622,
+          });
+          library.refresh();
+          await tester.pump();
+          await tester.tap(find.text(l.clearErrors).last);
+          await waitFor(
+            () =>
+                repository.errors.length == 1 &&
+                find.text(l.errorsCleared).evaluate().isNotEmpty &&
+                repository
+                        .history('profile')
+                        .firstWhere(
+                          (record) => record['id'] == 'failed',
+                        )['diagnosticsDismissed'] ==
+                    true,
+          );
+          expect(
+            repository.errors.single['detail'],
+            contains('New diagnostic during confirmation'),
+          );
+          expect(library.failedDiagnostics.single.$2['id'], 'new-failure');
+          expect(repository.history('profile').length, 2);
+          await tester.tap(find.text(l.clearErrors));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l.clearErrors).last);
+          await waitFor(
+            () =>
+                repository.errors.isEmpty &&
+                library.failedDiagnostics.isEmpty &&
+                find.text(l.noErrors).evaluate().isNotEmpty,
+          );
+          expect(find.text(l.noErrors), findsOneWidget);
+          final button = find
+              .ancestor(
+                of: find.text(l.clearErrors),
+                matching: find.byWidgetPredicate(
+                  (widget) => widget is TextButton,
+                ),
+              )
+              .first;
+          expect(tester.widget<TextButton>(button).onPressed, isNull);
+          expect(repository.history('profile').length, 2);
+          expect(
+            repository
+                .history('profile')
+                .every(
+                  (record) =>
+                      record['crashed'] == true && record['exitCode'] == -5,
+                ),
+            isTrue,
+          );
+          expect(repository.applications.single.toJson(), originalApp);
+          expect(repository.profiles.single.toJson(), originalProfile);
+          await tester.runAsync(() async {
+            expect(
+              await File(originalHistory.single['stdout'] as String)
+                  .readAsString(),
+              'stdout complete',
+            );
+            expect(
+              await File(originalHistory.single['stderr'] as String)
+                  .readAsString(),
+              endsWith('النهاية'),
+            );
+          });
+          library.reportError(
+            StateError('Fresh error after reset'),
+            StackTrace.current,
+          );
+          library.refresh();
+          await tester.pumpAndSettle();
+          expect(
+            find.textContaining('Fresh error after reset'),
+            findsOneWidget,
+          );
+          expect(find.text(l.noErrors), findsNothing);
+          expect(tester.widget<TextButton>(button).onPressed, isNotNull);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
       testWidgets(
         'Errors $language $size: full clipboard/TXT reports and responsive failed-launch details',
         (tester) async {

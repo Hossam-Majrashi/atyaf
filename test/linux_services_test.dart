@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,6 +11,19 @@ import 'package:atyaf/platform/linux/linux_repository.dart';
 import 'package:atyaf/platform/linux/linux_runtime.dart';
 import 'package:atyaf/shared/models/library_models.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class DrainingProcesses extends LinuxProcesses {
+  DrainingProcesses(super.runtime, super.repository);
+  final captured = Completer<void>();
+  final release = Completer<void>();
+  int streams = 0;
+  @override
+  Future<void> capture(Stream<List<int>> stream, String path) async {
+    await super.capture(stream, path);
+    if (++streams == 2) captured.complete();
+    await release.future;
+  }
+}
 
 void main() {
   late Directory temporary;
@@ -96,6 +110,37 @@ void main() {
       ),
       throwsArgumentError,
     );
+  });
+
+  test('X11 capability and explicit GTK backend are profile-local without changing Wayland session, paths or other settings', () {
+    final host = {
+      ...runtime.host,
+      'DISPLAY': ':99',
+      'WAYLAND_DISPLAY': 'wayland-0',
+      'GDK_BACKEND': 'wayland',
+    };
+    final desktop = LinuxRuntime(environment: host);
+    expect(desktop.hasX11Display, isTrue);
+    expect(
+      LinuxRuntime(environment: {...host, 'DISPLAY': ''}).hasX11Display,
+      isFalse,
+    );
+    const profile = Profile(
+      id: 'gtk',
+      applicationId: 'app',
+      name: 'GTK',
+      arguments: ['unchanged'],
+      environment: {'GDK_BACKEND': 'x11', 'KEEP': 'unchanged'},
+    );
+    final values = desktop.environmentFor(profile);
+    expect(values['GDK_BACKEND'], 'x11');
+    expect(values['DISPLAY'], ':99');
+    expect(values['WAYLAND_DISPLAY'], 'wayland-0');
+    expect(values['KEEP'], 'unchanged');
+    expect(values['XDG_CONFIG_HOME'], desktop.resolvedPaths(profile)['config']);
+    expect(desktop.argumentsFor(profile), ['unchanged']);
+    expect(desktop.host, host);
+    expect(desktop.host['GDK_BACKEND'], 'wayland');
   });
 
   test('Managed deletion rejects external paths and escaping parent symlinks; leaves symlink target intact', () async {
@@ -208,6 +253,76 @@ void main() {
     expect(repository.history(profile.id).length, 2);
     expect(repository.history(profile.id).first['exitCode'], -9);
   });
+
+  for (final stopRunning in [false, true]) {
+    test(
+      'Exit persistence waits for both streams, including ${stopRunning ? 'graceful stop' : 'cross-instance reconciliation'}',
+      () async {
+        final owner = DrainingProcesses(runtime, repository);
+        processes = owner;
+        const app = Application(
+          id: 'app',
+          name: 'Python',
+          executable: '/usr/bin/python3',
+        );
+        final review = await runtime.inspect(app.executable);
+        final profile = Profile(
+          id: 'draining',
+          applicationId: app.id,
+          name: 'Draining',
+          trustedFingerprint: review.fingerprint,
+          arguments: [
+            '-c',
+            stopRunning
+                ? 'import time; print("complete",flush=True); time.sleep(30)'
+                : 'print("complete")',
+          ],
+        );
+        repository.saveApplication(app);
+        repository.saveProfile(profile);
+        await owner.launch(app, profile);
+        if (stopRunning) {
+          final output = File(
+            repository.history(profile.id).single['stdout'] as String,
+          );
+          for (var attempt = 0; attempt < 100; attempt++) {
+            if (await output.exists() &&
+                (await output.readAsString()).contains('complete')) {
+              break;
+            }
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+          }
+        }
+        var stopped = false;
+        final stopping = stopRunning
+            ? owner.stop(profile.id).then((_) => stopped = true)
+            : null;
+        await owner.captured.future.timeout(const Duration(seconds: 5));
+        expect(repository.history(profile.id).single['stop'], isNull);
+        if (!stopRunning) {
+          LinuxProcesses(runtime, repository).reconcile();
+          expect(repository.history(profile.id).single['interrupted'], isTrue);
+        }
+        var drained = false;
+        final draining = owner.waitForPendingExits().then(
+          (_) => drained = true,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(drained, isFalse);
+        expect(stopped, stopRunning);
+        owner.release.complete();
+        await draining;
+        await stopping;
+        final record = repository.history(profile.id).single;
+        expect(record['exitCode'], stopRunning ? -15 : 0);
+        expect(record['interrupted'], isFalse);
+        expect(
+          await File(record['stdout'] as String).readAsString(),
+          contains('complete'),
+        );
+      },
+    );
+  }
 
   test('Unknown exit state is reconciled without signaling reused PIDs', () {
     repository.saveProfile(

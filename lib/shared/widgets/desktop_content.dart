@@ -22,10 +22,12 @@ class DesktopDialog extends StatelessWidget {
   const DesktopDialog({
     super.key,
     required this.title,
-    required this.children,
+    this.children = const [],
+    this.body,
     required this.actions,
   });
   final String title;
+  final Widget? body;
   final List<Widget> children, actions;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -41,12 +43,14 @@ class DesktopDialog extends StatelessWidget {
               Text(title, style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 20),
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: children,
-                  ),
-                ),
+                child:
+                    body ??
+                    SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: children,
+                      ),
+                    ),
               ),
               const SizedBox(height: 16),
               Wrap(

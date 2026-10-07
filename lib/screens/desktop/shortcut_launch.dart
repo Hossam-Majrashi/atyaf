@@ -25,5 +25,8 @@ Future<bool> launchDesktopShortcut(
       .any((record) => record['id'] == launchId && record['stop'] == null)) {
     await Future<void>.delayed(const Duration(milliseconds: 200));
   }
+  // Another library instance may have reconciled the record while our output
+  // streams were still draining. Never exit this supervisor before persistence.
+  await library.processes.waitForPendingExits();
   return true;
 }

@@ -29,6 +29,18 @@ Map<String, dynamic> crashRecord(
   return {...record, 'executable': record['executable'] ?? app?.executable};
 }
 
+List<String> logAdvice(AppLocalizations l, String stderr) => [
+  if (RegExp(r'net_error\s*[=:]?\s*-202\b').hasMatch(stderr))
+    l.certificateAdvice,
+  if (RegExp(
+    r'Error contacting kwallet|org\.kde\.KWallet|Error contacting klauncher',
+    caseSensitive: false,
+  ).hasMatch(stderr))
+    l.walletAdvice,
+  if (stderr.contains('xdg-open:') && stderr.contains('integer expected'))
+    l.desktopHandlerAdvice,
+];
+
 Future<List<ReportSection>> launchReport(
   AppLocalizations l,
   LibraryController library,
@@ -41,6 +53,14 @@ Future<List<ReportSection>> launchReport(
   final core = await library.logs.coreInfo(
     crashRecord(library, profile, record),
   );
+  final advice = [
+    if (record['interrupted'] == true) l.lostExitAdvice,
+    if (record['stderr'] is String)
+      ...logAdvice(
+        l,
+        await library.logs.read(record['stderr'] as String, profile.id),
+      ),
+  ];
   return [
     ReportSection(
       l.logs,
@@ -53,6 +73,8 @@ Future<List<ReportSection>> launchReport(
         record['exitCode']?.toString() ?? l.unavailable,
       ),
     ),
+    if (advice.isNotEmpty)
+      ReportSection(l.launchAdvice, text: advice.join('\n\n')),
     for (final channel in ['stdout', 'stderr'])
       ReportSection(
         channel == 'stdout' ? l.stdoutLabel : l.stderrLabel,

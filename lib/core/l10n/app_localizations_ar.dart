@@ -75,6 +75,75 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chooseExecutable => 'اختر ملفًا تنفيذيًا';
 
   @override
+  String get applicationIcon => 'أيقونة البرنامج';
+
+  @override
+  String get chooseApplicationIcon => 'اختر أيقونة البرنامج';
+
+  @override
+  String get applicationIconHelp =>
+      'اختر PNG أو JPG أو SVG وغيرها حسب دعم النظام. نحفظ نسخة PNG مستقلة؛ الصور المتحركة تُحفظ كصورة ثابتة. زر المجلد يقبل المجلدات فقط.';
+
+  @override
+  String supportedImageFormats(String formats) {
+    return 'صيغ الصور المتاحة على هذا الجهاز: $formats';
+  }
+
+  @override
+  String get chooseImageFolder => 'اختيار مجلد المشروع أو الصور';
+
+  @override
+  String get chooseImageFile => 'اختيار صورة من الجهاز';
+
+  @override
+  String get automaticIcon => 'استخدام الأيقونة التلقائية';
+
+  @override
+  String get searchImages => 'بحث في مسارات الصور (اضغط Enter)';
+
+  @override
+  String get noProjectImages =>
+      'لا توجد صور مطابقة. اختر صورة مباشرةً من جهازك أو مجلد صور آخر، أو استخدم الأيقونة التلقائية.';
+
+  @override
+  String get imageUnavailable =>
+      'الصورة تالفة أو غير مدعومة أو تتجاوز الحد المسموح (16 ميبيبايت / 8192 بكسل).';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String imageCount(int count) {
+    return '$count صورة · مرّر لتصفحها';
+  }
+
+  @override
+  String get launchAdvice => 'تشخيص التشغيل والاقتراحات';
+
+  @override
+  String get lostExitAdvice =>
+      'انقطع المشرف قبل تسجيل حالة الخروج. عدم توفر رمز الخروج لا يثبت انهيار البرنامج، ولا يمكن استرجاع الرموز القديمة المفقودة من هذه السجلات.';
+
+  @override
+  String get certificateAdvice =>
+      'يعني خطأ Chromium رقم -202 أن جهة إصدار الشهادة غير موثوقة. افحص سلسلة شهادات الموقع ومخزن شهادات النظام وأي وكيل يفحص HTTPS. لا يحدد هذا السجل الموقع المتأثر. لا تعطّل التحقق من الشهادات ولا تستورد شهادة غير موثوقة.';
+
+  @override
+  String get walletAdvice =>
+      'تعذر الاتصال بمحفظة KDE. تحقق من تفعيل KWallet وتوفرها على الجهاز. إذا كنت تستخدم عمدًا خدمة Secret Service تعمل بدلًا منها، يمكنك اختيارها صراحةً لملفات Electron/Chromium من محرر الحساب. قد يتطلب تغيير المخزن تسجيل الدخول مجددًا؛ لا يُنصح بالتخزين النصي غير المشفر.';
+
+  @override
+  String get desktopHandlerAdvice =>
+      'يأتي تحذير الأعداد من مسار KDE القديم في xdg-open. يحافظ أطياف المحدّث على إصدار جلسة KDE للجهاز. أعد تشغيل الحساب بالنسخة المحدّثة لتجديد معالج الروابط.';
+
+  @override
+  String get useSecretService => 'Electron/Chromium: استخدام Secret Service';
+
+  @override
+  String get secretServiceConfirm =>
+      'إضافة --password-store=gnome-libsecret إلى وسائط هذا الحساب؟ استخدمه فقط مع برنامج Electron/Chromium متوافق وخدمة Secret Service تعمل على الجهاز مثل GNOME Keyring. يغيّر هذا مخزن التشفير وقد يتطلب تسجيل الدخول مجددًا. لا يتم نقل بيانات الدخول السابقة أو حذفها. احفظ الحساب وأعد تشغيله للتطبيق؛ لا تتغير KWallet أو إعدادات النظام.';
+
+  @override
   String get name => 'الاسم';
 
   @override
@@ -194,6 +263,21 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُعزل مسارات XDG افتراضيًا ولا يتغير HOME. استخدم خيارات البرنامج الخاصة إن لم يدعم XDG. يمكن استخدام {config} و{data} و{cache} و{state} و{temp} و{home} و{profile} في الوسائط وقيم البيئة. هذا ليس عزلًا أمنيًا.';
 
   @override
+  String get windowControlsHelp =>
+      'يرث الحساب الافتراضي ترتيب أزرار النظام لتطبيقات GTK/Electron، مثل VS Code وAntigravity، دون مغادرة Wayland أو تغيير البيانات والتفضيلات الصريحة. المسارات المخصصة وإعدادات GSettings الخاصة لا تُغيَّر. خيار X11 أدناه بديل اختياري لـGTK، وليس الحل الأساسي لمحررات Electron.';
+
+  @override
+  String get useX11WindowControls => 'GTK: تجربة أزرار النوافذ عبر X11';
+
+  @override
+  String get x11Unavailable =>
+      'يتطلب هذا الخيار وجود DISPLAY لجلسة X11 أو XWayland على الجهاز.';
+
+  @override
+  String get x11WindowControlsConfirm =>
+      'تعيين GDK_BACKEND=x11 لهذا الحساب فقط؟ يناسب برامج GTK المتوافقة مع X11/XWayland، وقد يؤثر في التحجيم أو تكامل Wayland. عزل النوافذ في X11 أضعف منه في Wayland. لا يضمن الأزرار للحوارات غير القابلة لتغيير الحجم أو أشرطة العنوان الخاصة. تبقى بقية المتغيرات والوسائط وبيانات الحساب دون تغيير. احفظ وأعد تشغيل الحساب للتطبيق. للتراجع، احذف GDK_BACKEND من متغيرات البيئة أو غيّر قيمته إلى wayland.';
+
+  @override
   String get invalidInput =>
       'أدخل اسمًا وJSON صالحًا. المسارات يجب أن تكون مطلقة ومفاتيح البيئة معرّفات صالحة.';
 
@@ -291,7 +375,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get errors => 'الأخطاء والتشخيص';
 
   @override
-  String get noErrors => 'لا توجد أخطاء لأطياف أو عمليات تشغيل فاشلة مسجلة';
+  String get noErrors => 'لا توجد أخطاء أو عمليات تشغيل فاشلة جديدة';
+
+  @override
+  String get clearErrors => 'حذف الأخطاء';
+
+  @override
+  String get clearErrorsConfirm =>
+      'حذف أخطاء أطياف المعروضة وإزالة عمليات التشغيل الفاشلة الحالية من صفحة التشخيص؟ لا تتغير البرامج أو الحسابات، وتبقى سجلات التشغيل وملفات المخرجات في سجل الحساب. صدّر التقارير أولًا إن كنت تحتاجها. الأخطاء التي تصل بعد فتح هذا التأكيد لا تُحذف.';
+
+  @override
+  String get errorsCleared =>
+      'تم حذف الأخطاء السابقة من صفحة التشخيص. ستظهر الأخطاء الجديدة تلقائيًا.';
 
   @override
   String get applicationErrors => 'أخطاء أطياف';

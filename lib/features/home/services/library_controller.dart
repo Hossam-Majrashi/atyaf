@@ -69,6 +69,33 @@ class LibraryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<(Profile, Map<String, dynamic>)> get failedDiagnostics =>
+      [
+        for (final profile in repository.profiles)
+          for (final record in repository.history(profile.id))
+            if (record['stop'] != null &&
+                record['diagnosticsDismissed'] != true &&
+                (record['crashed'] == true || record['interrupted'] == true))
+              (profile, record),
+      ]..sort(
+        (a, b) => (b.$2['start'] as String? ?? '').compareTo(
+          a.$2['start'] as String? ?? '',
+        ),
+      );
+
+  Future<void> clearDiagnostics({
+    required List<String> errorIds,
+    required List<Map<String, dynamic>> failedLaunches,
+  }) async {
+    await repository.withExclusiveLock(() async {
+      repository.clearDiagnostics(
+        errorIds: errorIds,
+        failedLaunches: failedLaunches,
+      );
+    });
+    notifyListeners();
+  }
+
   void refresh() => notifyListeners();
   void reportError(Object error, StackTrace stack) {
     try {

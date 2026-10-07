@@ -12,6 +12,8 @@ import '../../shared/widgets/desktop_content.dart';
 import 'logs_screen.dart';
 import 'errors_screen.dart';
 import 'application_editor.dart';
+import 'application_icon_picker.dart';
+import 'application_icon_image.dart';
 import 'profile_editor.dart';
 import 'settings_screen.dart';
 
@@ -100,37 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
         false;
   }
 
-  Future<String?> nameDialog(String initial) async {
-    final l = AppLocalizations.of(context);
-    final controller = TextEditingController(text: initial);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l.name),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: l.name),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                Navigator.pop(context, controller.text.trim());
-              }
-            },
-            child: Text(l.save),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    return result;
-  }
+  Future<String?> nameDialog(String initial) => showDialog<String>(
+    context: context,
+    builder: (_) => _ApplicationNameDialog(initial: initial),
+  );
 
   Future<String?> chooseExecutable(ManagedSource source) async {
     final files = source.executables;
@@ -211,16 +186,35 @@ class _HomeScreenState extends State<HomeScreen> {
       if (staged == null) {
         await library.runtime.inspect(executable);
       }
+      if (!mounted) {
+        return;
+      }
+      final selectedIcon = await showDialog<String>(
+        context: context,
+        builder: (_) => ApplicationIconPicker(
+          root: staged?.root ?? p.dirname(executable!),
+          entries: library.entries,
+        ),
+      );
+      if (selectedIcon == null || !mounted) {
+        return;
+      }
+      final iconPng = selectedIcon.isEmpty ? null : selectedIcon;
       final name = await nameDialog(p.basename(executable));
       if (name == null) {
         return;
       }
       final app = staged == null
-          ? await library.applicationsService.add(name, executable)
+          ? await library.applicationsService.add(
+              name,
+              executable,
+              iconPng: iconPng,
+            )
           : await library.applicationsService.addManaged(
               name,
               staged,
               executable,
+              iconPng: iconPng,
             );
       library.select(app.id);
     } finally {
@@ -355,6 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => ProfileEditor(
         applicationId: app.id,
+        hasX11Display: library.runtime.hasX11Display,
         profile: existing,
         saveProfile: (profile) async {
           await library.profilesService.save(profile);
@@ -414,6 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
     children: [
       for (final app in library.applications)
         Padding(
+          key: ValueKey(app.id),
           padding: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             selected: library.selected?.id == app.id,
@@ -421,11 +417,17 @@ class _HomeScreenState extends State<HomeScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            leading: Icon(
-              app.portableRoot == null
-                  ? Icons.apps_rounded
-                  : Icons.inventory_2_outlined,
-            ),
+            leading: app.iconPng == null
+                ? Icon(
+                    app.portableRoot == null
+                        ? Icons.apps_rounded
+                        : Icons.inventory_2_outlined,
+                  )
+                : ApplicationIconImage(
+                    encoded: app.iconPng!,
+                    width: 36,
+                    height: 36,
+                  ),
             title: Text(app.name, overflow: TextOverflow.ellipsis),
             onTap: () => library.select(app.id),
           ),
@@ -603,22 +605,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 } else {
                   final updated = await showDialog<Application>(
                     context: context,
-                    builder: (context) => ApplicationEditor(application: app),
+                    builder: (context) => ApplicationEditor(
+                      application: app,
+                      entries: library.entries,
+                    ),
                   );
                   if (updated != null) {
                     final review = await library.runtime.inspect(
                       updated.executable,
                     );
-                    library.repository.saveApplication(
-                      Application(
-                        id: updated.id,
-                        name: updated.name,
-                        executable: review.path,
-                        portableRoot: updated.portableRoot,
-                        executableRelative: updated.executableRelative,
-                        wmClass: updated.wmClass,
-                      ),
+                    final saved = Application(
+                      id: updated.id,
+                      name: updated.name,
+                      executable: review.path,
+                      portableRoot: updated.portableRoot,
+                      executableRelative: updated.executableRelative,
+                      wmClass: updated.wmClass,
+                      iconPng: updated.iconPng,
                     );
+                    await library.repository.withExclusiveLock(() async {
+                      library.repository.saveApplication(saved);
+                      if (app.iconPng != saved.iconPng) {
+                        await library.entries.refreshIcons(
+                          saved,
+                          library.repository.profiles
+                              .where(
+                                (profile) => profile.applicationId == saved.id,
+                              )
+                              .toList(),
+                        );
+                      }
+                    });
                   }
                 }
               }),
@@ -848,6 +865,49 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ApplicationNameDialog extends StatefulWidget {
+  const _ApplicationNameDialog({required this.initial});
+  final String initial;
+  @override
+  State<_ApplicationNameDialog> createState() => _ApplicationNameDialogState();
+}
+
+class _ApplicationNameDialogState extends State<_ApplicationNameDialog> {
+  late final controller = TextEditingController(text: widget.initial);
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l.name),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: InputDecoration(labelText: l.name),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.cancel),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (controller.text.trim().isNotEmpty) {
+              Navigator.pop(context, controller.text.trim());
+            }
+          },
+          child: Text(l.save),
+        ),
+      ],
     );
   }
 }

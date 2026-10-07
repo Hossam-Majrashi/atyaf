@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 class Application {
   const Application({
@@ -8,8 +9,11 @@ class Application {
     this.portableRoot,
     this.executableRelative,
     this.wmClass = '',
+    this.iconPng,
   });
   final String id, name, executable, wmClass;
+  // A normalized PNG copy, independent of source paths and application updates.
+  final String? iconPng;
   final String? portableRoot, executableRelative;
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -18,6 +22,7 @@ class Application {
     'portableRoot': portableRoot,
     'executableRelative': executableRelative,
     'wmClass': wmClass,
+    'iconPng': iconPng,
   };
   factory Application.fromJson(Map<String, dynamic> j) => Application(
     id: j['id'] as String,
@@ -26,7 +31,33 @@ class Application {
     portableRoot: j['portableRoot'] as String?,
     executableRelative: j['executableRelative'] as String?,
     wmClass: j['wmClass'] as String? ?? '',
+    iconPng: _validatedIcon(j['iconPng'] as String?),
   );
+}
+
+String? _validatedIcon(String? encoded) {
+  if (encoded == null) {
+    return null;
+  }
+  if (encoded.length > 2800000) {
+    throw const FormatException('Application icon exceeds size limit');
+  }
+  final bytes = base64Decode(encoded);
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (bytes.length < 24 ||
+      bytes.length > 2 * 1024 * 1024 ||
+      !List.generate(
+        8,
+        (index) => bytes[index] == signature[index],
+      ).every((value) => value)) {
+    throw const FormatException('Invalid application PNG icon');
+  }
+  final header = ByteData.sublistView(bytes);
+  final width = header.getUint32(16), height = header.getUint32(20);
+  if (width < 1 || height < 1 || width > 512 || height > 512) {
+    throw const FormatException('Invalid application icon dimensions');
+  }
+  return encoded;
 }
 
 class Profile {

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:atyaf/features/logs/services/log_service.dart';
+import 'package:atyaf/features/process_manager/services/process_journal.dart';
+import 'package:sqlite3/sqlite3.dart';
 import 'package:atyaf/platform/linux/linux_crash_diagnostics.dart';
 import 'package:atyaf/platform/linux/linux_repository.dart';
 import 'package:atyaf/platform/linux/linux_runtime.dart';
@@ -117,6 +119,133 @@ void main() {
       ),
     ];
     expect(await logs.completeReport(sections), contains('unavailable'));
+  });
+
+  test('Clearing captured diagnostics persists, preserves history/files/profiles, and keeps new or changed failures', () async {
+    const app = Application(
+      id: 'app',
+      name: 'App',
+      executable: '/usr/bin/true',
+    );
+    const profile = Profile(
+      id: 'profile',
+      applicationId: 'app',
+      name: 'Profile',
+      arguments: ['unchanged'],
+    );
+    repository.saveApplication(app);
+    repository.saveProfile(profile);
+    final path = await logFile(
+      profile.id,
+      'stderr',
+      'complete preserved output',
+    );
+    const oldId = "old' OR 1=1 --";
+    repository.recordError({'id': oldId, 'detail': 'old error'});
+    final old = <String, dynamic>{
+      'id': 'old',
+      'profileId': profile.id,
+      'start': '2026-10-06T12:00:00',
+      'stop': '2026-10-06T12:01:00',
+      'crashed': true,
+      'exitCode': 7,
+      'stderr': path,
+    };
+    repository.recordLaunch(old);
+    repository.recordLaunch({
+      ...old,
+      'id': 'interrupted',
+      'crashed': false,
+      'interrupted': true,
+      'exitCode': null,
+    });
+    repository.recordLaunch({...old, 'id': 'changed'});
+    repository.recordLaunch({...old, 'id': 'running', 'stop': null});
+    repository.recordLaunch({
+      ...old,
+      'id': 'healthy',
+      'crashed': false,
+      'exitCode': 0,
+    });
+    final snapshot = repository.history(profile.id);
+    repository.recordError({
+      'id': 'new',
+      'detail': 'arrived during confirmation',
+    });
+    repository.recordLaunch({...old, 'id': 'new'});
+    repository.updateLaunch('changed', {'exitCode': 8});
+    await repository.withExclusiveLock(() async {
+      repository.clearDiagnostics(errorIds: [oldId], failedLaunches: snapshot);
+    });
+    expect(repository.errors.single['id'], 'new');
+    final history = {
+      for (final record in repository.history(profile.id)) record['id']: record,
+    };
+    expect(history.length, 6);
+    for (final id in ['old', 'interrupted']) {
+      expect(history[id]?['diagnosticsDismissed'], isTrue);
+    }
+    for (final id in ['new', 'changed', 'running', 'healthy']) {
+      expect(history[id]?['diagnosticsDismissed'], isNot(true));
+    }
+    expect(history['changed']?['exitCode'], 8);
+    expect(history['running']?['stop'], isNull);
+    expect(history['old']?['crashed'], isTrue);
+    expect(history['old']?['exitCode'], 7);
+    expect(repository.applications.single.toJson(), app.toJson());
+    expect(repository.profiles.single.toJson(), profile.toJson());
+    expect(await File(path).readAsString(), 'complete preserved output');
+    final reopened = LinuxRepository(repository.path);
+    try {
+      expect(reopened.errors.single['id'], 'new');
+      expect(
+        reopened
+            .history(profile.id)
+            .firstWhere(
+              (record) => record['id'] == 'old',
+            )['diagnosticsDismissed'],
+        isTrue,
+      );
+    } finally {
+      reopened.close();
+    }
+    // A real final failure arriving later must become visible again.
+    ProcessJournal(repository).finish('interrupted', 9);
+    final completed = repository
+        .history(profile.id)
+        .firstWhere((record) => record['id'] == 'interrupted');
+    expect(completed['diagnosticsDismissed'], isFalse);
+    expect(completed['crashed'], isTrue);
+    expect(completed['exitCode'], 9);
+    repository.clearDiagnostics(errorIds: [], failedLaunches: []);
+    expect(repository.errors.single['id'], 'new');
+  });
+
+  test('Diagnostic clearing rolls back both error deletion and failure dismissal on database failure', () {
+    repository.recordError({'id': 'keep', 'detail': 'must survive'});
+    repository.recordLaunch({
+      'id': 'failed',
+      'profileId': 'profile',
+      'crashed': true,
+      'stop': 'ended',
+    });
+    final captured = repository.history('profile');
+    repository.db.execute(
+      "CREATE TRIGGER reject_dismissal BEFORE UPDATE ON launches BEGIN SELECT RAISE(ABORT, 'Injected diagnostic failure'); END",
+    );
+    expect(
+      () => repository.clearDiagnostics(
+        errorIds: ['keep'],
+        failedLaunches: captured,
+      ),
+      throwsA(isA<SqliteException>()),
+    );
+    expect(repository.errors.single['id'], 'keep');
+    expect(
+      repository.history('profile').single['diagnosticsDismissed'],
+      isNull,
+    );
+    expect(repository.history('profile').single['crashed'], isTrue);
   });
 
   test('SQLite error journal survives reopening and keeps complete multiline errors and stack traces', () {

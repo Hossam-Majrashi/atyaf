@@ -4,6 +4,7 @@
 No candidate executable is started. Installed icons, managed Electron resources
 and fallback images are decoded, not merely accepted by filename extension.
 """
+import base64
 import configparser
 import ctypes
 import json
@@ -53,6 +54,102 @@ def valid(path):
         gobject.g_object_unref(image)
         return str(Path(path).absolute())
     return None
+
+
+def image_extensions():
+    class GSList(ctypes.Structure):
+        pass
+    GSList._fields_ = [('data', ctypes.c_void_p), ('next', ctypes.POINTER(GSList))]
+    pixbuf.gdk_pixbuf_get_formats.restype = ctypes.POINTER(GSList)
+    pixbuf.gdk_pixbuf_format_is_disabled.argtypes = [ctypes.c_void_p]
+    pixbuf.gdk_pixbuf_format_is_disabled.restype = ctypes.c_int
+    pixbuf.gdk_pixbuf_format_get_extensions.argtypes = [ctypes.c_void_p]
+    pixbuf.gdk_pixbuf_format_get_extensions.restype = ctypes.POINTER(ctypes.c_char_p)
+    glib.g_strfreev.argtypes = [ctypes.POINTER(ctypes.c_char_p)]
+    glib.g_slist_free.argtypes = [ctypes.POINTER(GSList)]
+    head = pixbuf.gdk_pixbuf_get_formats()
+    item = head
+    result = set()
+    try:
+        while item:
+            if not pixbuf.gdk_pixbuf_format_is_disabled(item.contents.data):
+                extensions = pixbuf.gdk_pixbuf_format_get_extensions(item.contents.data)
+                try:
+                    index = 0
+                    while extensions and extensions[index]:
+                        extension = extensions[index].decode('ascii').lower()
+                        if extension.isalnum() and len(extension) <= 16:
+                            result.add(extension)
+                        index += 1
+                finally:
+                    if extensions: glib.g_strfreev(extensions)
+            item = item.contents.next
+    finally:
+        if head: glib.g_slist_free(head)
+    return sorted(result)
+
+
+IMAGE_EXTENSIONS = {'.' + extension for extension in image_extensions()}
+
+
+def project_root(request):
+    root = Path(request['root'])
+    if not root.is_absolute() or not root.is_dir():
+        raise ValueError('Project root must be an existing absolute directory')
+    return root.resolve()
+
+
+def scan_images(request):
+    root = project_root(request)
+    images = []
+    count = 0
+
+    def failed(error):
+        raise error  # Never silently omit unreadable parts of the project.
+
+    for directory, folders, files in os.walk(root, followlinks=False, onerror=failed):
+        folders[:] = sorted(folder for folder in folders if not (Path(directory) / folder).is_symlink())
+        count += len(folders) + len(files)
+        if count > 100000:
+            raise ValueError('Project scan exceeds 100000 entries; choose a smaller image folder')
+        for name in sorted(files):
+            path = Path(directory) / name
+            if path.suffix.lower() not in IMAGE_EXTENSIONS and name != '.DirIcon':
+                continue
+            if path.resolve().is_relative_to(root) and path.is_file():
+                images.append(str(path.relative_to(root)))
+    return sorted(images)
+
+
+def previews(request):
+    root = project_root(request)
+    size = request.get('size', 96)
+    paths = request['paths']
+    if size not in (96, 512) or len(paths) > 40:
+        raise ValueError('Invalid preview request')
+    result = []
+    with tempfile.TemporaryDirectory(prefix='atyaf-preview-') as temporary:
+        for relative in paths:
+            path = root / relative
+            if Path(relative).is_absolute() or '..' in Path(relative).parts or not path.resolve().is_relative_to(root):
+                raise ValueError('Image path escapes project')
+            image = load(path, size)
+            if not image:
+                result.append(None)
+                continue
+            try:
+                output = Path(temporary) / 'preview.png'
+                error = ctypes.c_void_p()
+                saved = pixbuf.gdk_pixbuf_savev(image, os.fsencode(output), b'png', None, None, ctypes.byref(error))
+                if error.value:
+                    glib.g_error_free(error)
+                if not saved or output.stat().st_size > 2 * 1024 * 1024:
+                    result.append(None)
+                else:
+                    result.append(base64.b64encode(output.read_bytes()).decode('ascii'))
+            finally:
+                gobject.g_object_unref(image)
+    return result
 
 
 def local_icons(request):
@@ -169,5 +266,11 @@ if __name__ == '__main__':
             print(icon)
     elif sys.argv[1] == 'install':
         install(sys.argv[2], sys.argv[3:])
+    elif sys.argv[1] == 'formats':
+        print(json.dumps(image_extensions()))
+    elif sys.argv[1] == 'scan':
+        print(json.dumps(scan_images(json.loads(sys.argv[2])), ensure_ascii=False))
+    elif sys.argv[1] == 'previews':
+        print(json.dumps(previews(json.loads(sys.argv[2]))))
     else:
         raise ValueError('Unknown icon operation')

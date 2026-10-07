@@ -88,7 +88,18 @@ class LinuxDesktopEntries implements DesktopEntryService {
     try {
       final fallback = File(p.join(staging.path, 'fallback.png'));
       await fallback.writeAsBytes(icon, flush: true);
-      final applicationIcon = await findApplicationIcon(application);
+      String? applicationIcon;
+      if (application.iconPng != null) {
+        final selected = File(p.join(staging.path, 'selected.png'));
+        final bytes = base64Decode(application.iconPng!);
+        if (bytes.length > 2 * 1024 * 1024) {
+          throw ArgumentError('Selected icon exceeds 2 MiB');
+        }
+        await selected.writeAsBytes(bytes, flush: true);
+        applicationIcon = selected.path;
+      } else {
+        applicationIcon = await findApplicationIcon(application);
+      }
       final result = await LinuxCommands.run('/usr/bin/python3', [
         iconHelper,
         'install',
@@ -125,6 +136,18 @@ class LinuxDesktopEntries implements DesktopEntryService {
     await refresh();
   }
 
+  @override
+  Future<void> refreshIcons(
+    Application application,
+    List<Profile> profiles,
+  ) async {
+    for (final profile in profiles) {
+      if (await File(filePath(profile.id)).exists()) {
+        await create(application, profile);
+      }
+    }
+  }
+
   Future<String?> findApplicationIcon(Application application) async {
     final host = runtime is LinuxRuntime
         ? (runtime as LinuxRuntime).host
@@ -150,6 +173,66 @@ class LinuxDesktopEntries implements DesktopEntryService {
     }
     final name = result.stdout.toString().trim();
     return name.isNotEmpty ? name : null;
+  }
+
+  Future<dynamic> _imageOperation(
+    String operation,
+    Map<String, dynamic> request,
+  ) async {
+    final result = await LinuxCommands.run('/usr/bin/python3', [
+      iconHelper,
+      operation,
+      jsonEncode(request),
+    ]);
+    if (result.exitCode != 0) {
+      throw FileSystemException(result.stderr.toString().trim(), iconHelper);
+    }
+    return jsonDecode(result.stdout.toString());
+  }
+
+  @override
+  Future<List<String>> imageExtensions() async =>
+      List<String>.from(await _imageOperation('formats', {}) as List);
+
+  @override
+  Future<String?> readImage(String path) async {
+    final selected = LinuxCommands.hostPath(path);
+    if (!p.isAbsolute(selected) || selected.contains('\x00')) {
+      throw ArgumentError('Image path must be an absolute filesystem path');
+    }
+    // Decode only the explicitly selected file, not every image beside it.
+    // Keep the preview helper's size limits and canonical link confinement.
+    return (await previewImages(p.dirname(selected), [
+      p.basename(selected),
+    ], size: 512)).single;
+  }
+
+  @override
+  Future<List<String>> scanImages(String root) async => List<String>.from(
+    await _imageOperation('scan', {'root': LinuxCommands.hostPath(root)})
+        as List,
+  );
+
+  @override
+  Future<List<String?>> previewImages(
+    String root,
+    List<String> paths, {
+    int size = 96,
+  }) async {
+    if (paths.length > 40 || ![96, 512].contains(size)) {
+      throw ArgumentError('Preview requests must contain at most 40 images');
+    }
+    final images = List<String?>.from(
+      await _imageOperation('previews', {
+        'root': LinuxCommands.hostPath(root),
+        'paths': paths,
+        'size': size,
+      }) as List,
+    );
+    if (images.length != paths.length) {
+      throw StateError('Incomplete image preview response');
+    }
+    return images;
   }
 
   Future<void> refresh() async {

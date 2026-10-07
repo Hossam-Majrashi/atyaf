@@ -32,6 +32,8 @@ final class LinuxDesktopHandlers {
             'DBUS_SESSION_BUS_ADDRESS',
             'DESKTOP_SESSION',
             'KDE_FULL_SESSION',
+            'KDE_SESSION_VERSION',
+            'KDE_SESSION_UID',
             'GNOME_DESKTOP_SESSION_ID',
             'MATE_DESKTOP_SESSION_ID',
             'LXQT_SESSION_CONFIG',

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:atyaf/features/home/services/library_controller.dart';
 import 'package:atyaf/features/settings/services/preferences_service.dart';
@@ -63,6 +65,191 @@ void main() {
     repository.close();
     await temporary.delete(recursive: true);
   });
+
+  for (final cancel in [false, true]) {
+    testWidgets(
+      'Folder import icon gallery ${cancel ? 'cancels and cleans staging' : 'saves an icon and editing refreshes existing shortcuts'}',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({
+          'onboarding_done': true,
+          'language': 'en',
+        });
+        final source = Directory('${temporary.path}/project');
+        await tester.runAsync(() async {
+          await Directory('${source.path}/images/nested')
+              .create(recursive: true);
+          final executable = File('${source.path}/main');
+          await executable.writeAsString('#!/bin/sh\nexit 0\n');
+          await Process.run('chmod', ['755', executable.path]);
+          await File('assets/icon/icon.png')
+              .copy('${source.path}/images/nested/logo.png');
+          await File('${source.path}/images/other.svg').writeAsString(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" fill="red"/></svg>',
+          );
+        });
+        FilePickerLinux.registerWith();
+        final previousPicker = FilePicker.platform;
+        FilePicker.platform = DirectoryPicker(source.path);
+        addTearDown(() => FilePicker.platform = previousPicker);
+        await tester.pumpWidget(
+          AtyafApp(
+            preferences: PreferencesService(
+              await SharedPreferences.getInstance(),
+            ),
+            library: library,
+            manageWindow: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+        Future<void> waitFor(bool Function() ready) async {
+          for (var attempt = 0; attempt < 200; attempt++) {
+            await tester.runAsync(
+              () => Future<void>.delayed(const Duration(milliseconds: 15)),
+            );
+            await tester.pump(const Duration(milliseconds: 50));
+            if (ready()) {
+              await tester.pump(const Duration(milliseconds: 400));
+              return;
+            }
+          }
+          fail('Icon import/edit operation did not complete');
+        }
+
+        await tester.tap(find.byType(PopupMenuButton<String>).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Application folder'));
+        await waitFor(
+          () => find.text('Choose an executable').evaluate().isNotEmpty,
+        );
+        await tester.tap(find.text('main'));
+        await waitFor(
+          () =>
+              find.byType(CustomScrollView).evaluate().isNotEmpty &&
+              find.byType(LinearProgressIndicator).evaluate().length == 1,
+        );
+        if (cancel) {
+          await tester.tap(find.text('Cancel'));
+          await waitFor(
+            () => find.byType(LinearProgressIndicator).evaluate().isEmpty,
+          );
+          expect(repository.applications, isEmpty);
+          await tester.runAsync(() async {
+            expect(
+              await Directory('${library.runtime.root}/staging')
+                  .list()
+                  .toList(),
+              isEmpty,
+            );
+          });
+        } else {
+          await tester.scrollUntilVisible(
+            find.text('images/nested/logo.png'),
+            250,
+            scrollable: find
+                .descendant(
+                  of: find.byType(CustomScrollView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          await waitFor(
+            () => find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget is Image &&
+                      widget.semanticLabel == 'images/nested/logo.png',
+                )
+                .evaluate()
+                .isNotEmpty,
+          );
+          await tester.tap(find.text('images/nested/logo.png'));
+          await waitFor(() => find.text('Name').evaluate().isNotEmpty);
+          await tester.tap(find.text('Save'));
+          await waitFor(
+            () =>
+                repository.applications.isNotEmpty &&
+                find.byType(LinearProgressIndicator).evaluate().isEmpty,
+          );
+          final app = repository.applications.single;
+          expect(app.iconPng, isNotNull);
+          final entries = library.entries as LinuxDesktopEntries;
+          final profile = Profile(
+            id: 'existing',
+            applicationId: app.id,
+            name: 'Existing',
+          );
+          await tester.runAsync(() async {
+            await source.delete(recursive: true);
+            repository.saveProfile(profile);
+            await entries.create(app, profile);
+            expect(
+              await File(entries.iconPath(profile.id)).readAsBytes(),
+              base64Decode(app.iconPng!),
+            );
+          });
+          library.refresh();
+          await tester.pumpAndSettle();
+          await tester.tap(find.byType(PopupMenuButton<String>).at(1));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Edit'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          final choose = find.text('Choose an application icon');
+          await tester.ensureVisible(choose);
+          await tester.tap(choose);
+          await waitFor(
+            () =>
+                find.byType(CustomScrollView).evaluate().isNotEmpty &&
+                find.byType(LinearProgressIndicator).evaluate().length == 1,
+          );
+          await tester.scrollUntilVisible(
+            find.text('images/other.svg'),
+            250,
+            scrollable: find
+                .descendant(
+                  of: find.byType(CustomScrollView),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          await waitFor(
+            () => find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget is Image &&
+                      widget.semanticLabel == 'images/other.svg',
+                )
+                .evaluate()
+                .isNotEmpty,
+          );
+          await tester.tap(find.text('images/other.svg'));
+          await waitFor(
+            () =>
+                find.text('Choose an application icon').evaluate().length ==
+                    1 &&
+                find.byType(Image).evaluate().length > 1,
+          );
+          await tester.tap(find.text('Save'));
+          await waitFor(
+            () =>
+                repository.applications.single.iconPng != app.iconPng &&
+                find.byType(LinearProgressIndicator).evaluate().isEmpty,
+          );
+          await tester.runAsync(() async {
+            expect(
+              await File(entries.iconPath(profile.id)).readAsBytes(),
+              base64Decode(repository.applications.single.iconPng!),
+            );
+          });
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets(
     'Accepting onboarding defaults persists language, theme and completion',
@@ -248,6 +435,189 @@ void main() {
   );
 
   for (final language in ['en', 'ar']) {
+    for (final size in [const Size(1100, 760), const Size(1600, 900)]) {
+      testWidgets(
+        'Saved icons $language $size retain providers and frames across real timer refreshes and SQLite reloads',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          SharedPreferences.setMockInitialValues({
+            'onboarding_done': true,
+            'language': language,
+          });
+          // Create this controller inside the widget test's fake clock so each
+          // one-second pump exercises the production reconciliation timer.
+          library.dispose();
+          library = LibraryController(
+            repository: repository,
+            runtime: library.runtime,
+            archives: library.archives,
+            storage: library.storage,
+            backup: library.backup,
+            entries: library.entries,
+            processes: library.processes,
+          );
+          try {
+            late String firstPng, secondPng;
+            const profile = Profile(
+              id: 'profile',
+              applicationId: 'a',
+              name: 'Work',
+              environment: {'KEEP': 'unchanged'},
+            );
+            final entries = library.entries as LinuxDesktopEntries;
+            await tester.runAsync(() async {
+              final source = File('${temporary.path}/chosen.svg');
+              await source.writeAsString(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="green"/></svg>',
+              );
+              firstPng = (await entries.previewImages(
+                Directory('assets/icon').absolute.path,
+                ['icon.png'],
+                size: 512,
+              )).single!;
+              secondPng = (await entries.previewImages(temporary.path, [
+                'chosen.svg',
+              ], size: 512)).single!;
+              repository.saveApplication(
+                Application(
+                  id: 'a',
+                  name: 'Studio A',
+                  executable: '/usr/bin/true',
+                  iconPng: firstPng,
+                ),
+              );
+              repository.saveApplication(
+                Application(
+                  id: 'b',
+                  name: 'Studio B',
+                  executable: '/usr/bin/true',
+                  iconPng: secondPng,
+                ),
+              );
+              repository.saveProfile(profile);
+              await entries.create(repository.applications.first, profile);
+              await source.delete();
+            });
+            final labels = {'a': 'Studio A', 'b': 'Studio B'};
+            Finder icon(String id) => find.descendant(
+              of: find.widgetWithText(ListTile, labels[id]!),
+              matching: find.byType(Image),
+            );
+            ImageProvider provider(String id) =>
+                tester.widget<Image>(icon(id)).image;
+            ui.Image? frame(String id) => tester
+                .widget<RawImage>(
+                  find.descendant(
+                    of: icon(id),
+                    matching: find.byType(RawImage),
+                  ),
+                )
+                .image;
+            Future<void> waitForFrames() async {
+              for (var attempt = 0; attempt < 100; attempt++) {
+                await tester.runAsync(
+                  () => Future<void>.delayed(const Duration(milliseconds: 10)),
+                );
+                await tester.pump(const Duration(milliseconds: 10));
+                if (frame('a') != null && frame('b') != null) return;
+              }
+              fail('Saved icon frames did not load');
+            }
+
+            await tester.pumpWidget(
+              AtyafApp(
+                preferences: PreferencesService(
+                  await SharedPreferences.getInstance(),
+                ),
+                library: library,
+                manageWindow: false,
+              ),
+            );
+            await tester.pumpAndSettle();
+            await waitForFrames();
+            final firstProvider = provider('a'), secondProvider = provider('b');
+            final firstFrame = frame('a'), secondFrame = frame('b');
+            expect(
+              identical(
+                repository.applications.first,
+                repository.applications.first,
+              ),
+              isFalse,
+            );
+            for (var tick = 0; tick < 6; tick++) {
+              final previousTick = library.timer.tick;
+              await tester.pump(const Duration(seconds: 1));
+              expect(library.timer.tick, greaterThan(previousTick));
+              // Check immediately, not after decoding settles: there must be no
+              // blank frame between periodic library refreshes.
+              expect(frame('a'), same(firstFrame));
+              expect(frame('b'), same(secondFrame));
+              expect(provider('a'), same(firstProvider));
+              expect(provider('b'), same(secondProvider));
+            }
+            final renamed = Application.fromJson({
+              ...repository.applications.first.toJson(),
+              'name': 'Renamed A',
+            });
+            labels['a'] = renamed.name;
+            repository.saveApplication(renamed);
+            // Simulate a restored/reordered library with new model instances.
+            repository.removeApplication('a');
+            repository.saveApplication(renamed);
+            library.refresh();
+            await tester.pump();
+            expect(provider('a'), same(firstProvider));
+            expect(provider('b'), same(secondProvider));
+            expect(frame('a'), same(firstFrame));
+            library.select('b');
+            await tester.pump();
+            expect(provider('a'), same(firstProvider));
+            expect(provider('b'), same(secondProvider));
+            repository.saveApplication(
+              Application.fromJson({...renamed.toJson(), 'iconPng': secondPng}),
+            );
+            library.refresh();
+            await tester.pump();
+            expect(provider('a'), isNot(same(firstProvider)));
+            expect(
+              (provider('a') as MemoryImage).bytes,
+              base64Decode(secondPng),
+            );
+            await waitForFrames();
+            final replacement = provider('a'), replacementFrame = frame('a');
+            expect(replacementFrame, isNot(same(firstFrame)));
+            await tester.pump(const Duration(seconds: 1));
+            expect(provider('a'), same(replacement));
+            expect(frame('a'), same(replacementFrame));
+            repository.saveApplication(
+              Application.fromJson({...renamed.toJson(), 'iconPng': null}),
+            );
+            library.refresh();
+            await tester.pump();
+            expect(icon('a'), findsNothing);
+            expect(provider('b'), same(secondProvider));
+            expect(repository.profiles.single.toJson(), profile.toJson());
+            await tester.runAsync(() async {
+              // Rendering refreshes must not rewrite the Linux shortcut icon.
+              expect(
+                await File(entries.iconPath(profile.id)).readAsBytes(),
+                base64Decode(firstPng),
+              );
+              expect(
+                await File('${temporary.path}/chosen.svg').exists(),
+                isFalse,
+              );
+            });
+            expect(tester.takeException(), isNull);
+          } finally {
+            library.timer.cancel();
+          }
+        },
+      );
+    }
     testWidgets(
       'Saving and renaming $language accounts updates system shortcuts',
       (tester) async {

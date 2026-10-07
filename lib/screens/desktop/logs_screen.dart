@@ -103,6 +103,11 @@ class _LaunchLogCardState extends State<LaunchLogCard> {
         ),
         subtitle: Text(subtitle),
         children: [
+          if (record['interrupted'] == true)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(l.lostExitAdvice),
+            ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: ReportActions(
@@ -244,10 +249,21 @@ class _LogOutputState extends State<_LogOutput> {
           const SizedBox(height: 8),
           FutureBuilder<String>(
             future: preview,
-            builder: (context, snapshot) => SelectableText(
-              snapshot.hasError
-                  ? l.error(snapshot.error.toString())
-                  : snapshot.data ?? l.busy,
+            builder: (context, snapshot) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.title == l.stderrLabel && snapshot.hasData)
+                  for (final advice in logAdvice(l, snapshot.data!))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(advice),
+                    ),
+                SelectableText(
+                  snapshot.hasError
+                      ? l.error(snapshot.error.toString())
+                      : snapshot.data ?? l.busy,
+                ),
+              ],
             ),
           ),
         ],

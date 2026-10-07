@@ -234,6 +234,7 @@ class LinuxProcesses implements ProcessService {
     }
     for (var i = 0; i < 50; i++) {
       if (!matches(profileId, record)) {
+        // Stream persistence is awaited separately before supervisor shutdown.
         return;
       }
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -241,6 +242,16 @@ class LinuxProcesses implements ProcessService {
     if (force) {
       throw StateError('Process did not terminate');
     }
+  }
+
+  @override
+  Future<void> waitForPendingExits() async {
+    await Future.wait(exits.values.toList()).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => throw StateError(
+        'Output streams are still draining; keep Atyaf open until logs and exit status are saved',
+      ),
+    );
   }
 
   @override

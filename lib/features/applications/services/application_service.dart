@@ -15,16 +15,18 @@ class ApplicationService {
   Future<Application> addManaged(
     String name,
     ManagedSource source,
-    String relative,
-  ) => ManagedImportService(
+    String relative, {
+    String? iconPng,
+  }) => ManagedImportService(
     repository,
     runtime,
     storage,
-  ).add(name, source, relative);
+  ).add(name, source, relative, iconPng: iconPng);
   Future<Application> add(
     String name,
     String executable, {
     String? portableRoot,
+    String? iconPng,
   }) async {
     final review = await runtime.inspect(executable);
     final app = Application(
@@ -32,6 +34,7 @@ class ApplicationService {
       name: name.trim(),
       executable: review.path,
       portableRoot: portableRoot,
+      iconPng: iconPng,
     );
     if (app.name.isEmpty) {
       throw ArgumentError('Name required');

@@ -174,6 +174,120 @@ abstract class AppLocalizations {
   /// **'Choose an executable'**
   String get chooseExecutable;
 
+  /// No description provided for @applicationIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Application icon'**
+  String get applicationIcon;
+
+  /// No description provided for @chooseApplicationIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an application icon'**
+  String get chooseApplicationIcon;
+
+  /// No description provided for @applicationIconHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose PNG, JPG, SVG or other supported images. A PNG copy is saved (still frame for animations). The folder button accepts folders only.'**
+  String get applicationIconHelp;
+
+  /// No description provided for @supportedImageFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'Image formats available on this device: {formats}'**
+  String supportedImageFormats(String formats);
+
+  /// No description provided for @chooseImageFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose project / image folder'**
+  String get chooseImageFolder;
+
+  /// No description provided for @chooseImageFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose image from device'**
+  String get chooseImageFile;
+
+  /// No description provided for @automaticIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Use automatic icon'**
+  String get automaticIcon;
+
+  /// No description provided for @searchImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Search image paths (press Enter)'**
+  String get searchImages;
+
+  /// No description provided for @noProjectImages.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching images found. Choose an image directly from your device or another image folder, or use the automatic icon.'**
+  String get noProjectImages;
+
+  /// No description provided for @imageUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This image is damaged, unsupported, or exceeds the size limit (16 MiB / 8192 pixels).'**
+  String get imageUnavailable;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @imageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} images · scroll to browse'**
+  String imageCount(int count);
+
+  /// No description provided for @launchAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch diagnostics and suggestions'**
+  String get launchAdvice;
+
+  /// No description provided for @lostExitAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The supervisor was interrupted before recording the exit status. An unavailable exit code does not prove that the application crashed. Old missing codes cannot be recovered from these logs.'**
+  String get lostExitAdvice;
+
+  /// No description provided for @certificateAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Chromium error -202 means the certificate authority is not trusted. Check the failing site’s certificate chain, system trust store and any HTTPS-inspecting proxy. This log does not identify the site. Do not disable certificate verification or import an unverified certificate.'**
+  String get certificateAdvice;
+
+  /// No description provided for @walletAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The KDE wallet could not be contacted. Check whether KWallet is enabled and available on the host. If you intentionally use an active Secret Service instead, Electron/Chromium profiles can explicitly select it in the profile editor. Changing stores may require signing in again; plaintext storage is not recommended.'**
+  String get walletAdvice;
+
+  /// No description provided for @desktopHandlerAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The integer warning comes from xdg-open’s old KDE fallback. Updated Atyaf preserves the host KDE session version. Restart the profile with the updated build to regenerate its desktop handler.'**
+  String get desktopHandlerAdvice;
+
+  /// No description provided for @useSecretService.
+  ///
+  /// In en, this message translates to:
+  /// **'Electron/Chromium: use Secret Service'**
+  String get useSecretService;
+
+  /// No description provided for @secretServiceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add --password-store=gnome-libsecret to this profile’s arguments? Use only with a compatible Electron/Chromium application and an active host Secret Service (such as GNOME Keyring). This changes the encryption backend and may require signing in again. Existing credentials are not migrated or deleted. Save and restart the profile to apply; KWallet and system settings are not changed.'**
+  String get secretServiceConfirm;
+
   /// No description provided for @name.
   ///
   /// In en, this message translates to:
@@ -396,6 +510,30 @@ abstract class AppLocalizations {
   /// **'XDG paths are isolated by default; HOME is not changed. Use application-specific flags for apps that ignore XDG. Arguments and environment values can use \'{config}\', \'{data}\', \'{cache}\', \'{state}\', \'{temp}\', \'{home}\' and \'{profile}\'. This is not a security sandbox.'**
   String get profileHelp;
 
+  /// No description provided for @windowControlsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Default profiles inherit system window buttons for GTK/Electron apps such as VS Code and Antigravity without leaving Wayland or changing data and explicit preferences. Custom paths and GSettings setups stay untouched. X11 below is an optional GTK alternative, not the primary fix for Electron editors.'**
+  String get windowControlsHelp;
+
+  /// No description provided for @useX11WindowControls.
+  ///
+  /// In en, this message translates to:
+  /// **'GTK: try X11 window controls'**
+  String get useX11WindowControls;
+
+  /// No description provided for @x11Unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This option requires a host DISPLAY for an X11 or XWayland session.'**
+  String get x11Unavailable;
+
+  /// No description provided for @x11WindowControlsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Set GDK_BACKEND=x11 for this profile only? Use with GTK applications compatible with X11/XWayland; scaling or Wayland integration may differ. X11 provides weaker window isolation than Wayland. Buttons are not guaranteed for non-resizable dialogs or custom title bars. Other environment values, arguments and profile data remain unchanged. Save and restart the profile to apply. To undo, remove GDK_BACKEND from the environment or change it to wayland.'**
+  String get x11WindowControlsConfirm;
+
   /// No description provided for @invalidInput.
   ///
   /// In en, this message translates to:
@@ -573,8 +711,26 @@ abstract class AppLocalizations {
   /// No description provided for @noErrors.
   ///
   /// In en, this message translates to:
-  /// **'No application errors or failed launches recorded'**
+  /// **'No new application errors or failed launches'**
   String get noErrors;
+
+  /// No description provided for @clearErrors.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear errors'**
+  String get clearErrors;
+
+  /// No description provided for @clearErrorsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the displayed Atyaf errors and remove the current failed launches from diagnostics? Applications and profiles are unchanged; launch history and output files remain in profile history. Export reports first if you need them. Errors arriving after this confirmation opens are not cleared.'**
+  String get clearErrorsConfirm;
+
+  /// No description provided for @errorsCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous diagnostics cleared. New errors will appear automatically.'**
+  String get errorsCleared;
 
   /// No description provided for @applicationErrors.
   ///
