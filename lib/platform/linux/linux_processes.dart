@@ -19,6 +19,7 @@ class LinuxProcesses implements ProcessService {
   final LibraryRepository repository;
   final Map<String, Process> children = {};
   final Map<String, Future<int>> exits = {};
+  final Set<Future<void>> pendingLaunches = {};
   bool get flatpak => Platform.environment.containsKey('FLATPAK_ID');
   String statusPath(String id) =>
       '${runtime.profileRoot(id)}/host-process.json';
@@ -90,8 +91,24 @@ class LinuxProcesses implements ProcessService {
   }
 
   @override
-  Future<void> launch(Application application, Profile profile) =>
-      repository.withExclusiveLock(() => _launch(application, profile));
+  Future<void> launch(Application application, Profile profile) => trackLaunch(
+    () => repository.withExclusiveLock(() => _launch(application, profile)),
+  );
+
+  // Register before awaiting locks/preparation: closing during an in-flight
+  // launch or restart must not destroy the supervisor before its pipes exist.
+  Future<void> trackLaunch(Future<void> Function() action) async {
+    final finished = Completer<void>();
+    pendingLaunches.add(finished.future);
+    try {
+      await action();
+    } finally {
+      pendingLaunches.remove(finished.future);
+      // Launch failures belong to their caller, not the shutdown waiter.
+      finished.complete();
+    }
+  }
+
   Future<void> _launch(Application application, Profile profile) async {
     final review = await runtime.inspect(application.executable);
     if (profile.trustedFingerprint != review.fingerprint) {
@@ -102,8 +119,11 @@ class LinuxProcesses implements ProcessService {
         .open(mode: FileMode.append);
     try {
       await lock.lock(FileLock.exclusive);
-      if (isRunning(profile.id) || children.containsKey(profile.id)) {
-        throw StateError('Profile already running');
+      if (isRunning(profile.id)) {
+        throw ProfileAlreadyRunning();
+      }
+      if (children.containsKey(profile.id)) {
+        throw OutputStreamsPending();
       }
       final workingDirectory = profile.workingDirectory.isEmpty
           ? File(review.path).parent.path
@@ -245,17 +265,34 @@ class LinuxProcesses implements ProcessService {
   }
 
   @override
-  Future<void> waitForPendingExits() async {
-    await Future.wait(exits.values.toList()).timeout(
-      const Duration(seconds: 5),
-      onTimeout: () => throw StateError(
-        'Output streams are still draining; keep Atyaf open until logs and exit status are saved',
-      ),
-    );
+  Future<void> waitForPendingExits({
+    Duration? timeout = const Duration(seconds: 5),
+  }) async {
+    final pending = drainLocalSupervision();
+    if (timeout == null) {
+      await pending;
+    } else {
+      await pending.timeout(
+        timeout,
+        onTimeout: () => throw OutputStreamsPending(),
+      );
+    }
+  }
+
+  Future<void> drainLocalSupervision() async {
+    while (pendingLaunches.isNotEmpty || exits.isNotEmpty) {
+      await Future.wait<void>([
+        ...pendingLaunches,
+        ...exits.values.map((exit) => exit.then<void>((_) {})),
+      ]);
+    }
   }
 
   @override
-  Future<void> restart(Application application, Profile profile) async {
+  Future<void> restart(Application application, Profile profile) =>
+      trackLaunch(() => restartLocal(application, profile));
+
+  Future<void> restartLocal(Application application, Profile profile) async {
     await stop(profile.id);
     if (isRunning(profile.id)) {
       throw StateError(

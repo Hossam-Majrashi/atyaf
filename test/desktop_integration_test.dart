@@ -17,6 +17,21 @@ import 'package:atyaf/screens/desktop/shortcut_launch.dart';
 import 'package:atyaf/shared/models/library_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class RacingProcesses extends LinuxProcesses {
+  RacingProcesses(super.runtime, super.repository);
+  bool raceNextLaunch = false;
+
+  @override
+  Future<void> launch(Application application, Profile profile) async {
+    if (raceNextLaunch) {
+      raceNextLaunch = false;
+      // Simulate a competing launch winning after the shortcut's early check.
+      await super.launch(application, profile);
+    }
+    await super.launch(application, profile);
+  }
+}
+
 void main() {
   late Directory temporary;
   late LinuxRuntime runtime;
@@ -36,7 +51,7 @@ void main() {
     );
     await Directory(runtime.root).create(recursive: true);
     repository = LinuxRepository('${runtime.root}/library.sqlite');
-    final processes = LinuxProcesses(runtime, repository);
+    final processes = RacingProcesses(runtime, repository);
     final archives = LinuxArchives(
       runtime,
       File('assets/linux/archive_helper.py').absolute.path,
@@ -702,6 +717,95 @@ print(json.dumps([sys.argv[1:],os.environ['XDG_CONFIG_HOME']]))
     repository.saveProfile(profile.trusted('changed-executable'));
     expect(await launchDesktopShortcut(library, profile.id), isFalse);
     expect(repository.history(profile.id).length, 1);
+  });
+
+  test('Shortcut supervision outlives the drain deadline and cross-instance reconciliation', () async {
+    const app = Application(
+      id: 'app',
+      name: 'Python',
+      executable: '/usr/bin/python3',
+    );
+    final review = await runtime.inspect(app.executable);
+    final profile = Profile(
+      id: 'inherited-pipes',
+      applicationId: app.id,
+      name: 'Inherited pipes',
+      trustedFingerprint: review.fingerprint,
+      arguments: [
+        '-c',
+        '''
+import os, time, sys
+if os.fork() == 0:
+    print("helper ready", flush=True)
+    time.sleep(6.5)
+    print("late stdout", flush=True)
+    print("late stderr", file=sys.stderr, flush=True)
+    os._exit(0)
+os._exit(0)
+''',
+      ],
+    );
+    repository.saveApplication(app);
+    repository.saveProfile(profile);
+    var completed = false;
+    final shortcut = launchDesktopShortcut(library, profile.id).then((result) {
+      completed = true;
+      return result;
+    });
+    try {
+      // Wait for the actual parent exit, while its helper retains both pipes.
+      for (var attempt = 0; attempt < 200; attempt++) {
+        if (repository.history(profile.id).isNotEmpty &&
+            !library.processes.isRunning(profile.id)) {
+          break;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(repository.history(profile.id), hasLength(1));
+      expect(library.processes.isRunning(profile.id), isFalse);
+      LinuxProcesses(runtime, repository).reconcile();
+      expect(repository.history(profile.id).single['interrupted'], isTrue);
+      await Future<void>.delayed(const Duration(seconds: 5, milliseconds: 200));
+      expect(completed, isFalse);
+      expect(await shortcut.timeout(const Duration(seconds: 5)), isTrue);
+      final record = repository.history(profile.id).single;
+      expect(record['exitCode'], 0);
+      expect(record['interrupted'], isFalse);
+      expect(
+        await File(record['stdout'] as String).readAsString(),
+        'helper ready\nlate stdout\n',
+      );
+      expect(
+        await File(record['stderr'] as String).readAsString(),
+        'late stderr\n',
+      );
+      expect(repository.errors, isEmpty);
+    } finally {
+      await shortcut;
+    }
+  });
+
+  test('A shortcut launch race is treated as already supervised, not a UI fallback', () async {
+    const app = Application(
+      id: 'app',
+      name: 'Python',
+      executable: '/usr/bin/python3',
+    );
+    final review = await runtime.inspect(app.executable);
+    final profile = Profile(
+      id: 'race',
+      applicationId: app.id,
+      name: 'Race',
+      trustedFingerprint: review.fingerprint,
+      arguments: ['-c', 'import time; time.sleep(30)'],
+    );
+    repository.saveApplication(app);
+    repository.saveProfile(profile);
+    (library.processes as RacingProcesses).raceNextLaunch = true;
+    expect(await launchDesktopShortcut(library, profile.id), isTrue);
+    expect(repository.history(profile.id), hasLength(1));
+    expect(library.processes.isRunning(profile.id), isTrue);
+    expect(repository.errors, isEmpty);
   });
 
   test(

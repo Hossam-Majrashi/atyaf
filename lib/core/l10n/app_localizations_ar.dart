@@ -156,8 +156,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get close => 'إغلاق';
 
   @override
-  String get closeConfirm =>
-      'يجب إيقاف الملفات التي تعمل قبل إغلاق أطياف لتسجيل المخرجات ورموز الخروج. هل تريد إيقافها الآن؟';
+  String get outputStreamsPending =>
+      'لا يزال حفظ السجلات جاريًا. حاول التشغيل مجددًا بعد انتهاء البرنامج وعملياته المساعدة. يمكنك إغلاق نافذة أطياف؛ سيستمر تسجيل المخرجات في الخلفية. لم يتم تجاهل أي مخرجات.';
+
+  @override
+  String get profileAlreadyRunning =>
+      'هذا الملف الشخصي يعمل بالفعل. لم يتم تشغيل نسخة ثانية.';
 
   @override
   String get edit => 'تعديل';

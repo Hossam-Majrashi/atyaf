@@ -10,6 +10,7 @@ import 'package:atyaf/platform/linux/linux_processes.dart';
 import 'package:atyaf/platform/linux/linux_repository.dart';
 import 'package:atyaf/platform/linux/linux_runtime.dart';
 import 'package:atyaf/shared/models/library_models.dart';
+import 'package:atyaf/shared/services/process_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class DrainingProcesses extends LinuxProcesses {
@@ -303,10 +304,19 @@ void main() {
           LinuxProcesses(runtime, repository).reconcile();
           expect(repository.history(profile.id).single['interrupted'], isTrue);
         }
-        var drained = false;
-        final draining = owner.waitForPendingExits().then(
-          (_) => drained = true,
+        await expectLater(
+          owner.waitForPendingExits(timeout: const Duration(milliseconds: 20)),
+          throwsA(isA<OutputStreamsPending>()),
         );
+        await expectLater(
+          owner.launch(app, profile),
+          throwsA(isA<OutputStreamsPending>()),
+        );
+        expect(repository.history(profile.id), hasLength(1));
+        var drained = false;
+        final draining = owner
+            .waitForPendingExits(timeout: null)
+            .then((_) => drained = true);
         await Future<void>.delayed(const Duration(milliseconds: 150));
         expect(drained, isFalse);
         expect(stopped, stopRunning);

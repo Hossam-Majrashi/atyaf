@@ -151,6 +151,20 @@ All 140 Flutter tests, flutter analyze, source-contract verification, helper com
 
 Seven new Linux regressions verify schema/default fidelity (including compiled distribution overrides), persistence/non-copying, cache integrity and host updates, explicit choices, aliases and native GTK3 Wayland behavior. The latter changes native gtk-decoration-layout from menu:close to minimize/maximize/close with the same Wayland backend. Existing profile widget tests verify the revised localized explanation; desktop matrix and unrelated icon/process/backup tests still pass. User libraries and host preferences were only read. No live user's VS Code/Antigravity window interaction is claimed; the tested GTK property is the native setting consumed by Electron controls. Updated executable: `build/linux/x64/release/bundle/atyaf`, requiring its `lib` and `data` siblings. No new Flatpak/ARM64 build or installed/dist artifact replacement is claimed.
 
+## Hidden shortcut drain supervision
+
+All 145 Flutter tests, clean `flutter analyze`, source-contract checks, diff checks and the native x64 release build pass. Hidden shortcuts await actual local process/log completion without a deadline or database-stop polling. Visible close retains its five-second bound and leaves the window open with a localized pending-log notice, without adding a spurious error. Expected duplicate contention also gets localized feedback; genuine shortcut failures fall back to the desktop without an automatic second launch. Approval review, identity validation, stream persistence and separate graceful/force termination behavior remain intact.
+
+Regressions include a real Linux fork whose helper keeps stdout/stderr open beyond five seconds, cross-instance reconciliation and late final persistence, a launch race, pending-output launch refusal, and English/Arabic shutdown/retry. A native release smoke in a temporary library verified survival past the deadline without an X11 fallback window, one launch, complete late stdout/stderr, exit code 0 and no Atyaf errors. The user's SQLite records were only queried; their historical Studio exit code 2 and empty logs were not rewritten or diagnosed beyond available evidence. Hidden supervisors can intentionally remain alive until inherited pipes close; independently daemonized children are not newly tracked or killed.
+
+Updated executable: `build/linux/x64/release/bundle/atyaf`, requiring its `lib` and `data` siblings. Installed binaries and `dist/` artifacts were not replaced; no new Flatpak/ARM64 build or live user IDE reproduction is claimed. Normalize generated localization documentation after building with `python3 tool/normalize_l10n.py` before running the source-contract checker.
+
+## Non-stopping desktop close
+
+All 152 Flutter tests, clean `flutter analyze`, source-contract/diff checks and `flutter build linux --release` pass. Closing now hides the window immediately without stopping programs. Local launch/restart and stream supervision continues without a shutdown deadline; the process exits after its own output/exit commits complete. Applications owned by an independent shortcut supervisor do not delay the visible instance's exit. Genuine close failures restore the UI. Eleven revised/new localized desktop tests use real Linux children and SQLite plus mocked native window calls to cover running/local/external/draining/preparing/idle closes, repeated events, full logs and failure recovery.
+
+The initial release build failed because the generated CMake cache retained the old `/home/hossam/StudioProjects/atyaf` path after project relocation. Its generated release directory was preserved as `build/linux/x64/release-before-window-close-*`, then a clean build succeeded at `build/linux/x64/release/bundle/atyaf` (keep sibling `lib` and `data`). No installed binary, user library or `dist/` artifact was replaced. No new Flatpak/ARM64 build or live user IDE close interaction is claimed.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building

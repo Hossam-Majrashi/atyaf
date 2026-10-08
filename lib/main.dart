@@ -14,6 +14,7 @@ import 'platform/linux/linux_integration.dart';
 import 'screens/desktop/home_screen.dart';
 import 'screens/desktop/onboarding_screen.dart';
 import 'screens/desktop/shortcut_launch.dart';
+import 'screens/desktop/window_close.dart';
 
 Future<void> main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +42,9 @@ Future<void> main(List<String> arguments) async {
       }
     } catch (error, stack) {
       library.reportError(error, stack);
-      // Normal desktop UI exposes failures and any required approval.
+      // Show the failure without automatically retrying a launch that may
+      // already have started. Only missing approval triggers the UI launch flow.
+      profileId = null;
     }
   }
   runApp(
@@ -102,44 +105,12 @@ class _AtyafAppState extends State<AtyafApp> with WindowListener {
     }
     closing = true;
     try {
-      final profiles = widget.library.repository.profiles
-          .where((p) => widget.library.processes.isRunning(p.id))
-          .toList();
-      if (profiles.isNotEmpty) {
-        final context = navigator.currentContext!;
-        final l = AppLocalizations.of(context);
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(l.close),
-            content: Text(l.closeConfirm),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(l.cancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(l.stop),
-              ),
-            ],
-          ),
-        );
-        if (confirmed != true) {
-          return;
-        }
-        for (final profile in profiles) {
-          await widget.library.processes.stop(profile.id);
-        }
-        if (profiles.any((p) => widget.library.processes.isRunning(p.id))) {
-          return;
-        }
-      }
-      // A terminated PID is not proof that output and exit metadata are saved.
-      await widget.library.processes.waitForPendingExits();
-      await windowManager.destroy();
+      await closeDesktopWindow(widget.library.processes);
     } catch (error, stack) {
       widget.library.reportError(error, stack);
+      // A genuine supervision/window error needs a visible recovery surface.
+      await windowManager.show();
+      await windowManager.focus();
       final context = navigator.currentContext;
       if (context != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

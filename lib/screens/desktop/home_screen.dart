@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../../core/l10n/app_localizations.dart';
 import '../../features/home/services/library_controller.dart';
 import '../../shared/services/managed_storage_service.dart';
+import '../../shared/services/process_service.dart';
 import '../../features/updates/services/update_service.dart';
 import '../../features/settings/services/preferences_service.dart';
 import '../../shared/models/library_models.dart';
@@ -58,6 +59,22 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await operation();
       library.refresh();
+    } on ProfileAlreadyRunning {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).profileAlreadyRunning),
+          ),
+        );
+      }
+    } on OutputStreamsPending {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).outputStreamsPending),
+          ),
+        );
+      }
     } on ApplicationRunning {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

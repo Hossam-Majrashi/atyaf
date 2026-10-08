@@ -47,7 +47,7 @@
 - **اختصارات بأسماء الحسابات:** حفظ الحساب ينشئ اختصارًا باسمه في قائمة التطبيقات، بأيقونة البرنامج الأصلية عند اكتشافها، أو أيقونة أطياف كبديل. يمكن تحديث اختصارات الحسابات السابقة من زر «إضافة إلى قائمة تطبيقات الجهاز».
 - **تشغيل مباشر:** الاختصارات المعتمدة تشغّل الحساب دون ظهور نافذة أطياف، مع بقاء المشرف في الخلفية لتسجيل المخرجات وحالة الخروج. التشغيل الأول أو تغيّر الملف التنفيذي يتطلب مراجعة وتأكيدًا.
 - **متصفح الجهاز الافتراضي:** الروابط التي تفتحها البرامج عبر `xdg-open` تستخدم إعدادات الجهاز بدل إعدادات الحساب المعزول. تبقى متغيرات `PATH` و`BROWSER` المخصصة محترمة.
-- **إدارة العمليات:** تشغيل وإيقاف تدريجي وإعادة تشغيل، مع إيقاف قسري منفصل ومؤكد عند الحاجة.
+- **إدارة العمليات:** تشغيل وإيقاف تدريجي وإعادة تشغيل، مع إيقاف قسري منفصل ومؤكد عند الحاجة. إغلاق نافذة أطياف لا يوقف البرامج المفتوحة؛ يبقى المشرف مخفيًا حتى اكتمال سجلات البرامج التي شغّلها، ثم ينتهي تلقائيًا.
 - **سجلات وتشخيص:** عرض سجل التشغيل والمخرجات والأخطاء، ونسخ التقارير كاملة أو تصديرها إلى TXT. زر «حذف الأخطاء» في صفحة «الأخطاء والتشخيص» يزيل الأخطاء القديمة بتأكيد لمراقبة الأخطاء الجديدة، دون حذف سجل تشغيل الحسابات أو ملفات المخرجات. صدّر تقارير أخطاء أطياف أولًا إن كنت تحتاجها. تتوفر تفاصيل انهيار النظام عند توفر `coredumpctl` والصلاحيات المناسبة.
 - **نسخ احتياطي واستعادة:** تصدير المكتبة المُدارة واستعادتها، دون تضمين الملفات التنفيذية الخارجية أو بيانات المسارات المخصصة.
 - **مسارات مؤقتة قصيرة:** تجنّب حدود طول مسارات مقابس Unix في تطبيقات Electron وChromium، دون تعطيل آليات الحماية الخاصة بها.
@@ -165,7 +165,7 @@ The screenshots are displayed in the Arabic section above:
 - **Account-named shortcuts:** Saving a profile adds a system applications-menu shortcut with its own name and the original application's icon when discoverable, falling back to Atyaf's icon. Existing shortcuts can be refreshed using **Add to applications menu**.
 - **Direct launching:** Approved shortcuts launch without the Atyaf window. A background supervisor preserves complete output and exit status. First launches and changed executables require review and approval.
 - **Host default browser:** Links opened through `xdg-open` use the device's desktop settings rather than isolated profile defaults. Explicit `PATH` and `BROWSER` overrides are preserved.
-- **Process management:** Launch, stop gracefully and restart, with force termination as a separate confirmed action.
+- **Process management:** Launch, stop gracefully and restart, with force termination as a separate confirmed action. Closing the Atyaf window leaves programs running; its hidden supervisor exits automatically once its own programs' logs and exit status have been saved.
 - **Logs and diagnostics:** Inspect launch history, output and errors, copy complete reports or export TXT. **Clear errors** in **Errors and diagnostics** confirms removal of previous diagnostics so you can monitor new errors, without deleting profile launch history or output files. Export Atyaf error reports first if needed. System crash details are available when `coredumpctl` and permissions allow access.
 - **Backup and restore:** Export and restore the managed library without including external executables or custom data paths.
 - **Short temporary paths:** Avoid Electron/Chromium Unix socket pathname limits without disabling their security mechanisms.

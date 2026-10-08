@@ -1,4 +1,5 @@
 import '../../features/home/services/library_controller.dart';
+import '../../shared/services/process_service.dart';
 
 /// Approved desktop shortcuts need no library window. Keep the supervisor alive
 /// until output and exit status are persisted; approval still uses the normal UI.
@@ -18,15 +19,19 @@ Future<bool> launchDesktopShortcut(
   if (await library.launcher.approval(profile, application) != null) {
     return false;
   }
-  await library.launcher.launch(profile, application);
-  final launchId = library.repository.history(profile.id).first['id'];
-  while (library.repository
-      .history(profile.id)
-      .any((record) => record['id'] == launchId && record['stop'] == null)) {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+  try {
+    await library.launcher.launch(profile, application);
+  } on ProfileAlreadyRunning {
+    // Another supervisor won the launch race under the library lock.
+    return true;
+  } on OutputStreamsPending {
+    // A local supervisor still owns output from the previous launch.
+    await library.processes.waitForPendingExits(timeout: null);
+    return true;
   }
-  // Another library instance may have reconciled the record while our output
-  // streams were still draining. Never exit this supervisor before persistence.
-  await library.processes.waitForPendingExits();
+  // Follow our actual completion, not SQLite's stop marker: another instance
+  // can reconcile an exited PID before inherited output pipes reach EOF.
+  // Hidden supervision has no shutdown deadline and must not retry the launch.
+  await library.processes.waitForPendingExits(timeout: null);
   return true;
 }

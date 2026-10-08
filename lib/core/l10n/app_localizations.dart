@@ -312,11 +312,17 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get close;
 
-  /// No description provided for @closeConfirm.
+  /// No description provided for @outputStreamsPending.
   ///
   /// In en, this message translates to:
-  /// **'Running profiles must be stopped before closing Atyaf so their output and exit codes can be recorded. Stop them now?'**
-  String get closeConfirm;
+  /// **'Logs are still being saved. Try launching again after the application and its background helpers have finished. You can close the Atyaf window; logging will continue in the background. No output has been discarded.'**
+  String get outputStreamsPending;
+
+  /// No description provided for @profileAlreadyRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'This profile is already running. No second copy was started.'**
+  String get profileAlreadyRunning;
 
   /// No description provided for @edit.
   ///

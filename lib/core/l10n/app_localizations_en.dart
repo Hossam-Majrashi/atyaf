@@ -156,8 +156,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
-  String get closeConfirm =>
-      'Running profiles must be stopped before closing Atyaf so their output and exit codes can be recorded. Stop them now?';
+  String get outputStreamsPending =>
+      'Logs are still being saved. Try launching again after the application and its background helpers have finished. You can close the Atyaf window; logging will continue in the background. No output has been discarded.';
+
+  @override
+  String get profileAlreadyRunning =>
+      'This profile is already running. No second copy was started.';
 
   @override
   String get edit => 'Edit';
