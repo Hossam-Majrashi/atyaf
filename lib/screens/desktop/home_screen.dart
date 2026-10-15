@@ -150,6 +150,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
         children: [
+          Text(l.managedLinksHelp),
+          const SizedBox(height: 16),
           for (var index = 0; index < files.length; index++)
             ListTile(
               leading: const Icon(Icons.terminal_rounded),

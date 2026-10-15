@@ -75,6 +75,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chooseExecutable => 'اختر ملفًا تنفيذيًا';
 
   @override
+  String get managedLinksHelp =>
+      'تبقى الروابط الرمزية الداخلية قابلة للنقل داخل البرنامج المستورد. تُرفض الروابط إلى ملفات خارجه والأهداف المفقودة وحلقات الروابط. لا يؤدي الاستيراد إلى تشغيل أي ملف تنفيذي.';
+
+  @override
   String get applicationIcon => 'أيقونة البرنامج';
 
   @override

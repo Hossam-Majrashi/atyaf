@@ -174,6 +174,12 @@ abstract class AppLocalizations {
   /// **'Choose an executable'**
   String get chooseExecutable;
 
+  /// No description provided for @managedLinksHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal symbolic links are kept portable within the imported application. Links to files outside it, missing targets and link loops are rejected. Importing does not launch any executable.'**
+  String get managedLinksHelp;
+
   /// No description provided for @applicationIcon.
   ///
   /// In en, this message translates to:

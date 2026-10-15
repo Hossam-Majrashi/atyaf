@@ -14,6 +14,10 @@ Packaging tools: a **real** `dpkg-deb`, `rpmbuild`, `bsdtar`, `zstd`, `tar`, `gz
 
 This host originally had a contents-only dpkg-deb compatibility wrapper and no appimagetool or flatpak-builder. Real dpkg-deb and flatpak-builder binaries were extracted from the official Arch packages into `/tmp/atyaf-tools`, and the official appimagetool x86-64 release was downloaded there. Builds were executed with that directory prepended to PATH. GNOME 50 Platform and SDK were installed user-wide from Flathub. These environment tools are not project dependencies or bundled executables. The full dpkg-deb and appimagetool were subsequently installed persistently in `~/.local/bin` (the previous dpkg-deb script was backed up under `~/.local/share/atyaf-build-tools/backups/`), so the native script now works on this host's ordinary PATH without sudo. Flatpak-builder remains available in `/tmp/atyaf-tools` for the verified Flatpak build.
 
+## Building after cleanup
+
+`build_linux.sh` creates both `dist/` and `build/` before allocating its private packaging workspace, so it can run directly after `flutter clean` or from a fresh checkout. No preliminary manual `mkdir` or Flutter build is required. The EXIT trap removes only that invocation's temporary packaging directory, preserving other build outputs.
+
 ## x86-64 (x64)
 
 Run on a native x86-64 Linux machine:

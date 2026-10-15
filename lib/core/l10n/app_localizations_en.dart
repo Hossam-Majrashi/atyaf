@@ -75,6 +75,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chooseExecutable => 'Choose an executable';
 
   @override
+  String get managedLinksHelp =>
+      'Internal symbolic links are kept portable within the imported application. Links to files outside it, missing targets and link loops are rejected. Importing does not launch any executable.';
+
+  @override
   String get applicationIcon => 'Application icon';
 
   @override

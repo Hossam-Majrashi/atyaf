@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:atyaf/core/l10n/app_localizations.dart';
 import 'package:atyaf/features/home/services/library_controller.dart';
 import 'package:atyaf/features/settings/services/preferences_service.dart';
 import 'package:atyaf/main.dart';
@@ -30,6 +31,33 @@ class DirectoryPicker extends FilePicker {
   }) async {
     calls++;
     return path;
+  }
+}
+
+class ArchivePicker extends FilePicker {
+  ArchivePicker(this.path);
+  final String path;
+  int calls = 0;
+
+  @override
+  Future<FilePickerResult?> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Function(FilePickerStatus)? onFileLoading,
+    bool allowCompression = false,
+    int compressionQuality = 0,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    bool lockParentWindow = false,
+    bool readSequential = false,
+  }) async {
+    calls++;
+    return FilePickerResult([
+      PlatformFile(name: 'sirb.tar.gz', path: path, size: 1),
+    ]);
   }
 }
 
@@ -249,6 +277,121 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+  }
+
+  for (final language in ['en', 'ar']) {
+    for (final size in [
+      const Size(800, 600),
+      const Size(1100, 760),
+      const Size(1600, 900),
+    ]) {
+      testWidgets(
+        'Archive absolute internal link imports safely $language $size',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          SharedPreferences.setMockInitialValues({
+            'onboarding_done': true,
+            'language': language,
+          });
+          final l = lookupAppLocalizations(Locale(language));
+          final archive = '${temporary.path}/sirb.tar.gz';
+          final marker = File('${temporary.path}/must-not-launch');
+          await tester.runAsync(() async {
+            final root = '${temporary.path}/package';
+            final binary = File('$root/opt/com.h.sirb/launcher');
+            await binary.parent.create(recursive: true);
+            await binary.writeAsString('#!/bin/sh\ntouch "${marker.path}"\n');
+            await Process.run('chmod', ['755', binary.path]);
+            final alias = Link('$root/usr/bin/sirb');
+            await alias.parent.create(recursive: true);
+            await alias.create('/opt/com.h.sirb/launcher');
+            final result = await Process.run('tar', [
+              '-czf',
+              archive,
+              '-C',
+              root,
+              '.',
+            ]);
+            expect(result.exitCode, 0);
+          });
+          FilePickerLinux.registerWith();
+          final previous = FilePicker.platform;
+          final picker = ArchivePicker(archive);
+          FilePicker.platform = picker;
+          addTearDown(() => FilePicker.platform = previous);
+          await tester.pumpWidget(
+            AtyafApp(
+              preferences: PreferencesService(
+                await SharedPreferences.getInstance(),
+              ),
+              library: library,
+              manageWindow: false,
+            ),
+          );
+          await tester.pumpAndSettle();
+          Future<void> waitFor(bool Function() ready) async {
+            for (var i = 0; i < 200; i++) {
+              await tester.runAsync(
+                () => Future<void>.delayed(const Duration(milliseconds: 15)),
+              );
+              await tester.pump(const Duration(milliseconds: 50));
+              if (ready()) {
+                await tester.pump(const Duration(milliseconds: 400));
+                return;
+              }
+            }
+            fail('Archive import did not complete');
+          }
+
+          await tester.tap(find.byType(PopupMenuButton<String>).first);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l.archive));
+          await waitFor(
+            () => find.text(l.chooseExecutable).evaluate().isNotEmpty,
+          );
+          expect(find.text(l.managedLinksHelp), findsOneWidget);
+          expect(picker.calls, 1);
+          await tester.ensureVisible(find.text('usr/bin/sirb'));
+          await tester.tap(find.text('usr/bin/sirb'));
+          await waitFor(
+            () => find
+                .widgetWithText(TextButton, l.automaticIcon)
+                .evaluate()
+                .any(
+                  (element) => (element.widget as TextButton).onPressed != null,
+                ),
+          );
+          await tester.tap(find.text(l.automaticIcon));
+          await waitFor(() => find.text(l.name).evaluate().isNotEmpty);
+          await tester.tap(find.text(l.save));
+          await waitFor(
+            () =>
+                repository.applications.isNotEmpty &&
+                find.byType(LinearProgressIndicator).evaluate().isEmpty,
+          );
+          final app = repository.applications.single;
+          expect(app.executableRelative, 'usr/bin/sirb');
+          expect(repository.errors, isEmpty);
+          await tester.runAsync(() async {
+            expect(
+              await Link('${app.portableRoot}/usr/bin/sirb').target(),
+              '../../opt/com.h.sirb/launcher',
+            );
+            expect(await marker.exists(), isFalse);
+            expect(
+              await Directory('${library.runtime.root}/staging')
+                  .list()
+                  .toList(),
+              isEmpty,
+            );
+          });
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
   }
 
   testWidgets(

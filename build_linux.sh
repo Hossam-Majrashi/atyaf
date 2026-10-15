@@ -13,7 +13,8 @@ esac
 case "$(uname -m):$target" in x86_64:x64|aarch64:arm64) ;; *) fail "Native $target Linux host/toolchain required; see BUILD_NOTES.md" ;; esac
 version="$(python3 -c "import re; print(re.search(r'^version:\\s*([^+\\s]+)',open('pubspec.yaml').read(),re.M).group(1))")"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9.-]+)?$ ]] || fail 'Invalid pubspec version'
-mkdir -p dist
+# flutter clean removes build/; create the workspace parent before mktemp.
+mkdir -p dist build
 work="$(mktemp -d "$PWD/build/package-$target.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 flutter build linux --release --target-platform "linux-$target"

@@ -53,7 +53,7 @@ def extract(source, destination):
             members = []
             total = 0
             names = set()
-            links = set()
+            links = {}
             for member in archive:
                 name = clean_name(member.name)
                 if str(name) == '.':
@@ -67,12 +67,19 @@ def extract(source, destination):
                     raise ValueError('Unsupported special file or hard link')
                 if member.issym():
                     target = member.linkname
-                    if os.path.isabs(target) or '\\' in target or any(ord(c) < 32 for c in target):
-                        raise ValueError('Unsafe symlink')
+                    if not target or len(target) > 4096 or '\\' in target or any(ord(c) < 32 for c in target):
+                        raise ValueError('Unsafe symlink: ' + str(name) + ' -> ' + repr(target))
+                    if PurePosixPath(target).is_absolute():
+                        # Distribution-layout packages may link usr/bin/app to
+                        # /opt/app/launcher. Rebase into this archive, never the
+                        # host filesystem; final strict checks require a target
+                        # extracted here and validate the complete link chain.
+                        internal = clean_name(target.lstrip('/'))
+                        target = os.path.relpath(root / str(internal), root / str(name.parent))
                     resolved = (root / str(name.parent) / target).resolve()
                     if not resolved.is_relative_to(root):
-                        raise ValueError('Symlink escapes destination')
-                    links.add(name)
+                        raise ValueError('Symlink escapes destination: ' + str(name))
+                    links[name] = target
                 if member.size < 0:
                     raise ValueError('Negative member size')
                 total += member.size
@@ -94,10 +101,14 @@ def extract(source, destination):
                 if member.issym():
                     out = root / str(name)
                     out.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-                    os.symlink(member.linkname, out)
+                    os.symlink(links[name], out)
             for link in links:
-                if not (root / str(link)).resolve().is_relative_to(root):
-                    raise ValueError('Symlink chain escapes destination')
+                try:
+                    resolved = (root / str(link)).resolve(strict=True)
+                except (OSError, RuntimeError) as error:
+                    raise ValueError('Missing or cyclic archive symlink: ' + str(link)) from error
+                if not resolved.is_relative_to(root):
+                    raise ValueError('Symlink chain escapes destination: ' + str(link))
     except BaseException:
         shutil.rmtree(root)
         raise
