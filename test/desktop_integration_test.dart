@@ -601,7 +601,7 @@ print(json.dumps([sys.argv[1:],dict(os.environ)],ensure_ascii=False))
     );
   });
 
-  test('Real xdg-open selects KDE 6 handler instead of legacy integer-warning fallback', () async {
+  test('Real xdg-open dispatches supported KDE sessions without the legacy integer-warning fallback', () async {
     final bin = await Directory('${temporary.path}/KDE handlers').create();
     final handler = File('${bin.path}/kde-open');
     await handler.writeAsString('''#!/usr/bin/python3
@@ -621,26 +621,37 @@ print(json.dumps([sys.argv[1:],os.environ.get('KDE_SESSION_VERSION'),os.environ.
     }
     runtime.host['PATH'] = '${bin.path}:/usr/bin:/bin';
     runtime.host['XDG_CURRENT_DESKTOP'] = 'KDE';
-    runtime.host['KDE_SESSION_VERSION'] = '6';
     // Advertise a graphical session; fake handlers never connect to a server.
     runtime.host['DISPLAY'] = ':123';
     const profile = Profile(id: 'kde', applicationId: 'app', name: 'KDE');
     repository.saveProfile(profile);
-    await runtime.prepare(profile);
-    const url = 'https://example.org/oauth?state=exact%20url&code=abc';
-    final result = await Process.run(
-      runtime.desktopHandlers(profile).opener,
-      [url],
-      environment: runtime.environmentFor(profile),
-      includeParentEnvironment: false,
-    );
-    expect(result.exitCode, 0, reason: result.stderr.toString());
-    expect(result.stderr, isEmpty);
-    expect(jsonDecode(result.stdout.toString()), [
-      [url],
-      '6',
-      runtime.host['XDG_CONFIG_HOME'],
-    ]);
+    // xdg-utils 1.1.3 has no KDE 6 dispatch case at all (it returns success
+    // without opening anything). Test its supported KDE 5 case, and also
+    // exercise KDE 6 on modern xdg-utils. Exact KDE 6 metadata preservation
+    // is independently asserted by the wrapper/secret-exclusion test above.
+    final script = await File('/usr/bin/xdg-open').readAsString();
+    final versions = [
+      '5',
+      if (RegExp(r'^\s*6\)', multiLine: true).hasMatch(script)) '6',
+    ];
+    for (final version in versions) {
+      runtime.host['KDE_SESSION_VERSION'] = version;
+      await runtime.prepare(profile);
+      const url = 'https://example.org/oauth?state=exact%20url&code=abc';
+      final result = await Process.run(
+        runtime.desktopHandlers(profile).opener,
+        [url],
+        environment: runtime.environmentFor(profile),
+        includeParentEnvironment: false,
+      );
+      expect(result.exitCode, 0, reason: result.stderr.toString());
+      expect(result.stderr, isEmpty);
+      expect(jsonDecode(result.stdout.toString()), [
+        [url],
+        version,
+        runtime.host['XDG_CONFIG_HOME'],
+      ]);
+    }
   });
 
   test(
