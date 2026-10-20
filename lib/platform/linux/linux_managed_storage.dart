@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -11,7 +12,11 @@ import 'linux_archives.dart';
 import 'linux_commands.dart';
 
 class LinuxManagedStorage implements ManagedStorageService {
-  LinuxManagedStorage(this.runtime, this.archives);
+  LinuxManagedStorage(this.runtime, this.archives, {String? appImageIconHelper})
+    : appImageIconHelper =
+          appImageIconHelper ??
+          File('assets/linux/appimage_icons.py').absolute.path;
+  final String appImageIconHelper;
   final RuntimeService runtime;
   final ArchiveService archives;
 
@@ -64,6 +69,47 @@ class LinuxManagedStorage implements ManagedStorageService {
         throw StateError('No valid executables in source');
       }
       return ManagedSource(source, root, List.unmodifiable(valid));
+    } catch (_) {
+      await runtime.deleteManaged(root);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ManagedSource> stageAppImage(String source) async {
+    final parent = await stagingParent();
+    final root = '${parent.path}/${const Uuid().v4()}';
+    try {
+      if (!p.isAbsolute(source) || source.contains('\x00')) {
+        throw ArgumentError('AppImage path must be absolute');
+      }
+      if (archives is! LinuxArchives) {
+        throw StateError('Linux AppImage importer unavailable');
+      }
+      await (archives as LinuxArchives).invoke([
+        'appimage',
+        LinuxCommands.hostPath(source),
+        root,
+      ]);
+      final staged = ManagedSource(source, root, const [
+        'application.AppImage',
+      ], isAppImage: true);
+      await review(staged, staged.executables.single);
+      final result = await LinuxCommands.run('/usr/bin/python3', [
+        appImageIconHelper,
+        root,
+      ]);
+      final icons = result.exitCode == 0
+          ? jsonDecode(result.stdout.toString()) as Map<String, dynamic>
+          : <String, dynamic>{'status': 'unavailable'};
+      return ManagedSource(
+        source,
+        root,
+        staged.executables,
+        isAppImage: true,
+        defaultIconPng: icons['icon'] as String?,
+        appImageIconStatus: icons['status'] as String?,
+      );
     } catch (_) {
       await runtime.deleteManaged(root);
       rethrow;

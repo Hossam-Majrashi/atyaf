@@ -17,6 +17,7 @@ import 'application_icon_picker.dart';
 import 'application_icon_image.dart';
 import 'profile_editor.dart';
 import 'settings_screen.dart';
+import 'terminal_command_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -124,6 +125,16 @@ class _HomeScreenState extends State<HomeScreen> {
     builder: (_) => _ApplicationNameDialog(initial: initial),
   );
 
+  String? appImageIconNotice(ManagedSource? source) {
+    final l = AppLocalizations.of(context);
+    return switch (source?.appImageIconStatus) {
+      'missing_tool' => l.appImageIconToolMissing,
+      'unsupported' => l.appImageIconUnsupported,
+      'no_icon' || 'unavailable' => l.appImageIconUnavailable,
+      _ => null,
+    };
+  }
+
   Future<String?> chooseExecutable(ManagedSource source) async {
     final files = source.executables;
     final reviews = <ExecutableReview>[];
@@ -151,6 +162,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         children: [
           Text(l.managedLinksHelp),
+          if (source.isAppImage) ...[
+            const SizedBox(height: 12),
+            Text(l.appImageHelp),
+          ],
           const SizedBox(height: 16),
           for (var index = 0; index < files.length; index++)
             ListTile(
@@ -170,6 +185,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<String?> pickAppImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: AppLocalizations.of(context).appImage,
+      type: FileType.custom,
+      allowedExtensions: const ['AppImage', 'appimage', 'APPIMAGE'],
+      allowMultiple: false,
+      withData: false,
+    );
+    return result?.files.single.path;
+  }
+
   Future<void> add(String kind) async {
     final l = AppLocalizations.of(context);
     String? executable;
@@ -183,6 +209,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
         staged = await library.storage.stage(directory, archive: false);
+        executable = await chooseExecutable(staged);
+      } else if (kind == 'appimage') {
+        final path = await pickAppImage();
+        if (path == null) {
+          return;
+        }
+        staged = await library.storage.stageAppImage(path);
         executable = await chooseExecutable(staged);
       } else {
         final result = await FilePicker.platform.pickFiles(
@@ -213,13 +246,18 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (_) => ApplicationIconPicker(
           root: staged?.root ?? p.dirname(executable!),
           entries: library.entries,
+          notice: appImageIconNotice(staged),
         ),
       );
       if (selectedIcon == null || !mounted) {
         return;
       }
       final iconPng = selectedIcon.isEmpty ? null : selectedIcon;
-      final name = await nameDialog(p.basename(executable));
+      final name = await nameDialog(
+        kind == 'appimage'
+            ? p.basenameWithoutExtension(staged!.source)
+            : p.basename(executable),
+      );
       if (name == null) {
         return;
       }
@@ -286,6 +324,11 @@ class _HomeScreenState extends State<HomeScreen> {
             title: Text(l.archive),
             onTap: () => Navigator.pop(context, 'archive'),
           ),
+          ListTile(
+            leading: const Icon(Icons.apps_rounded),
+            title: Text(l.appImage),
+            onTap: () => Navigator.pop(context, 'appimage'),
+          ),
         ],
       ),
     );
@@ -295,6 +338,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final String? path;
     if (kind == 'folder') {
       path = await FilePicker.platform.getDirectoryPath(dialogTitle: l.folder);
+    } else if (kind == 'appimage') {
+      path = await pickAppImage();
     } else {
       path = (await FilePicker.platform.pickFiles(dialogTitle: l.archive))
           ?.files
@@ -305,10 +350,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     final sourcePath = path;
-    final staged = await library.storage.stage(
-      sourcePath,
-      archive: kind == 'archive',
-    );
+    final staged = kind == 'appimage'
+        ? await library.storage.stageAppImage(sourcePath)
+        : await library.storage.stage(sourcePath, archive: kind == 'archive');
     try {
       final relative =
           library.updates.preferredExecutable(app, staged) ??
@@ -343,13 +387,32 @@ class _HomeScreenState extends State<HomeScreen> {
             SelectableText(relative),
             const SizedBox(height: 20),
             Text(l.updateHelp),
+            if (appImageIconNotice(staged) case final notice?) ...[
+              const SizedBox(height: 12),
+              Text(notice),
+            ],
           ],
         ),
       );
       if (allowed != true) {
         return;
       }
-      await library.updates.update(app, staged, relative);
+      final updated = await library.updates.update(app, staged, relative);
+      if (app.iconPng != updated.iconPng || app.iconPng == null) {
+        await library.repository.withExclusiveLock(() async {
+          final current = library.repository.applications
+              .where((item) => item.id == updated.id)
+              .firstOrNull;
+          if (current != null) {
+            await library.entries.refreshIcons(
+              current,
+              library.repository.profiles
+                  .where((profile) => profile.applicationId == current.id)
+                  .toList(),
+            );
+          }
+        });
+      }
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(l.updateSuccess)));
@@ -495,6 +558,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                         case 'shortcut':
                           await createShortcut(profile);
+                        case 'terminal':
+                          await terminalCommand(profile);
                         case 'removeShortcut':
                           await library.entries.remove(profile.id);
                           notifyDone();
@@ -512,6 +577,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     PopupMenuItem(value: 'edit', child: Text(l.edit)),
                     PopupMenuItem(value: 'logs', child: Text(l.logs)),
                     PopupMenuItem(value: 'shortcut', child: Text(l.shortcut)),
+                    if (library.terminalCommands != null)
+                      PopupMenuItem(
+                        value: 'terminal',
+                        child: Text(l.terminalCommand),
+                      ),
                     PopupMenuItem(
                       value: 'removeShortcut',
                       child: Text(l.removeShortcut),
@@ -556,6 +626,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.app_shortcut_rounded),
                   label: Text(l.shortcut),
                 ),
+                if (library.terminalCommands != null)
+                  OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => perform(() => terminalCommand(profile)),
+                    icon: const Icon(Icons.terminal_rounded),
+                    label: Text(l.terminalCommand),
+                  ),
                 if (running)
                   OutlinedButton.icon(
                     onPressed: busy
@@ -571,6 +649,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Future<void> terminalCommand(Profile profile) => showDialog<void>(
+    context: context,
+    builder: (_) => TerminalCommandDialog(library: library, profile: profile),
+  );
 
   Future<void> createShortcut(Profile profile) async {
     final application = library.repository.applications.firstWhere(
@@ -640,7 +723,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       portableRoot: updated.portableRoot,
                       executableRelative: updated.executableRelative,
                       wmClass: updated.wmClass,
-                      iconPng: updated.iconPng,
+                      iconPng:
+                          updated.iconPng ??
+                          (updated.iconAutomatic && updated.portableRoot != null
+                              ? await library.entries.readImage(
+                                  p.join(updated.portableRoot!, '.DirIcon'),
+                                )
+                              : null),
+                      iconAutomatic: updated.iconAutomatic,
                     );
                     await library.repository.withExclusiveLock(() async {
                       library.repository.saveApplication(saved);
@@ -781,6 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     PopupMenuItem(value: 'folder', child: Text(l.folder)),
                     PopupMenuItem(value: 'archive', child: Text(l.archive)),
+                    PopupMenuItem(value: 'appimage', child: Text(l.appImage)),
                   ],
                   child: DecoratedBox(
                     decoration: BoxDecoration(

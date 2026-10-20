@@ -13,6 +13,8 @@ import 'package:atyaf/platform/linux/linux_runtime.dart';
 import 'package:atyaf/shared/models/library_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/appimage_fixture.dart';
+
 class FailingRepository extends LinuxRepository {
   FailingRepository(super.path);
   bool failSave = false;
@@ -115,6 +117,221 @@ void main() {
     expect(result.exitCode, 0);
     expect(result.stdout, version);
   }
+
+  for (final type in [1, 2]) {
+    test(
+      'AppImage type $type imports independently without changing source permissions or adjacent data',
+      () async {
+        final input = await appImageFixture(
+          '${temporary.path}/برنامج v1 "quote" % dollar\$.AppImage',
+          type: type,
+        );
+        final original = await input.readAsBytes();
+        await Directory('${input.path}.home').create();
+        await File('${input.path}.home/secret').writeAsString('never imported');
+        final staged = await storage.stageAppImage(input.path);
+        expect(staged.executables, ['application.AppImage']);
+        expect(await input.readAsBytes(), original);
+        expect((await input.stat()).mode & 0x1ff, 0x180); // 0600
+        final review = await storage.review(staged, staged.executables.single);
+        expect(review.size, original.length);
+        final app = await applications.addManaged(
+          'My AppImage',
+          staged,
+          staged.executables.single,
+        );
+        await storage.discard(staged);
+        await input.delete();
+        expect(app.executableRelative, 'application.AppImage');
+        expect(await File(app.executable).readAsBytes(), original);
+        expect((await File(app.executable).stat()).mode & 0x1ff, 0x1c0); // 0700
+        expect(await Directory(app.portableRoot!).list().length, 1);
+        expect(
+          await File('${input.path}.home/secret').readAsString(),
+          'never imported',
+        );
+        expect(repository.profiles, isEmpty);
+        expect(await Directory(staged.root).exists(), isFalse);
+      },
+    );
+  }
+
+  test('AppImage accounts require approval, launch with separate XDG data, and survive update/backup with icons and shortcuts', () async {
+    final input = await appImageFixture('${temporary.path}/version1.AppImage');
+    final staged = await storage.stageAppImage(input.path);
+    final entries = LinuxDesktopEntries(
+      runtime,
+      await File('assets/icon/icon.png').readAsBytes(),
+      executable: '/usr/bin/true',
+    );
+    final icon = await entries.readImage(
+      File('assets/icon/icon.png').absolute.path,
+    );
+    final app = await applications.addManaged(
+      'Renamable AppImage',
+      staged,
+      staged.executables.single,
+      iconPng: icon,
+    );
+    await storage.discard(staged);
+    final snapshots = <String, Map<String, dynamic>>{};
+    final shortcuts = <String, String>{};
+    final review = await runtime.inspect(app.executable);
+    for (final id in ['work', 'personal']) {
+      final profile = Profile(
+        id: id,
+        applicationId: app.id,
+        name: '$id العربية',
+        arguments: [
+          '/usr/bin/python3',
+          '-c',
+          'import os,pathlib; p=pathlib.Path(os.environ["XDG_DATA_HOME"])/"account"; '
+              'p.write_text(os.environ["ACCOUNT"]); print(os.environ["XDG_CONFIG_HOME"])',
+        ],
+        environment: {'ACCOUNT': id},
+      );
+      repository.saveProfile(profile);
+      await expectLater(processes.launch(app, profile), throwsStateError);
+      final trusted = profile.trusted(review.fingerprint);
+      repository.saveProfile(trusted);
+      snapshots[id] = trusted.toJson();
+      await entries.create(app, trusted);
+      shortcuts[id] = await File(entries.filePath(id)).readAsString();
+      await processes.launch(app, trusted);
+    }
+    await processes.waitForPendingExits();
+    for (final profile in repository.profiles) {
+      final paths = runtime.resolvedPaths(profile);
+      expect(await File('${paths['data']}/account').readAsString(), profile.id);
+      final record = repository.history(profile.id).single;
+      expect(record['exitCode'], 0);
+      expect(
+        await File(record['stdout'] as String).readAsString(),
+        contains(paths['config']),
+      );
+    }
+    final next = await appImageFixture(
+      '${temporary.path}/renamed-v2.APPIMAGE',
+      version: 'two',
+    );
+    final replacement = await storage.stageAppImage(next.path);
+    expect(
+      updates.preferredExecutable(app, replacement),
+      app.executableRelative,
+    );
+    final updated = await updates.update(
+      app,
+      replacement,
+      replacement.executables.single,
+    );
+    await storage.discard(replacement);
+    expect(updated.name, app.name);
+    expect(updated.iconPng, icon);
+    expect(updated.executable, app.executable);
+    final nextReview = await runtime.inspect(updated.executable);
+    expect(nextReview.fingerprint, isNot(review.fingerprint));
+    for (final profile in repository.profiles) {
+      expect(profile.toJson(), snapshots[profile.id]);
+      expect(
+        await File(entries.filePath(profile.id)).readAsString(),
+        shortcuts[profile.id],
+      );
+      await expectLater(processes.launch(updated, profile), throwsStateError);
+    }
+    final backup = LinuxBackup(runtime, repository, archives, processes);
+    final destination = '${temporary.path}/AppImages.tar.gz';
+    await backup.export(destination);
+    await File(updated.executable).writeAsString('damaged');
+    await backup.restore(destination);
+    final restored = repository.applications.single;
+    expect(restored.iconPng, icon);
+    expect(restored.name, app.name);
+    expect(
+      await File(restored.executable).readAsBytes(),
+      await next.readAsBytes(),
+    );
+    for (final profile in repository.profiles) {
+      expect(profile.trustedFingerprint, isEmpty);
+      expect(
+        await File('${runtime.resolvedPaths(profile)['data']}/account')
+            .readAsString(),
+        profile.id,
+      );
+    }
+  });
+
+  test('AppImage update rolls back on commit failure and cancellation discards only the staged copy', () async {
+    final input = await appImageFixture('${temporary.path}/old.AppImage');
+    final staged = await storage.stageAppImage(input.path);
+    final app = await applications.addManaged(
+      'Old',
+      staged,
+      staged.executables.single,
+    );
+    final original = await File(app.executable).readAsBytes();
+    final next = await appImageFixture(
+      '${temporary.path}/new.AppImage',
+      version: 'new',
+    );
+    final replacement = await storage.stageAppImage(next.path);
+    repository.failSave = true;
+    await expectLater(
+      updates.update(app, replacement, replacement.executables.single),
+      throwsStateError,
+    );
+    repository.failSave = false;
+    await storage.discard(replacement);
+    expect(await File(app.executable).readAsBytes(), original);
+    expect(repository.applications.single.toJson(), app.toJson());
+    final canceled = await storage.stageAppImage(next.path);
+    await storage.discard(canceled);
+    expect(await Directory(canceled.root).exists(), isFalse);
+    expect(await next.exists(), isTrue);
+    expect(await Directory('${runtime.root}/staging').list().toList(), isEmpty);
+  });
+
+  test('AppImage rejects malformed/privileged/symlink/special/oversized sources and cleans staging', () async {
+    final input = await appImageFixture('${temporary.path}/invalid.AppImage');
+    final valid = await input.readAsBytes();
+    for (final bytes in [
+      <int>[],
+      [1, 2, 3],
+      [...valid]..[8] = 0,
+      [...valid]..[10] = 3,
+      [...valid]..[4] = 1,
+      [...valid]..[18] = 3,
+    ]) {
+      await input.writeAsBytes(bytes);
+      await expectLater(storage.stageAppImage(input.path), throwsStateError);
+    }
+    await input.writeAsBytes(valid);
+    await Process.run('chmod', ['4600', '--', input.path]);
+    await expectLater(storage.stageAppImage(input.path), throwsStateError);
+    await Process.run('chmod', ['600', '--', input.path]);
+    final link = await Link('${temporary.path}/link.AppImage')
+        .create(input.path);
+    await expectLater(storage.stageAppImage(link.path), throwsStateError);
+    final fifo = '${temporary.path}/pipe.AppImage';
+    await Process.run('mkfifo', [fifo]);
+    await expectLater(
+      storage.stageAppImage(fifo).timeout(const Duration(seconds: 5)),
+      throwsStateError,
+    );
+    final stream = await input.open(mode: FileMode.append);
+    await stream.truncate(8 * 1024 * 1024 * 1024 + 1);
+    await stream.close();
+    await expectLater(storage.stageAppImage(input.path), throwsStateError);
+    await expectLater(
+      storage.stageAppImage('relative.AppImage'),
+      throwsArgumentError,
+    );
+    await expectLater(
+      storage.stageAppImage('/invalid\x00.AppImage'),
+      throwsArgumentError,
+    );
+    expect(repository.applications, isEmpty);
+    expect(await Directory('${runtime.root}/staging').list().toList(), isEmpty);
+  });
 
   test('Full folder import stores relative executable and runs after source deletion', () async {
     final input = await folder('source', 'managed');

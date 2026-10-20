@@ -13,6 +13,7 @@ import '../../profiles/services/profile_service.dart';
 import '../../archives/services/archive_service.dart';
 import '../../backup/services/backup_service.dart';
 import '../../desktop_entries/services/desktop_entry_service.dart';
+import '../../desktop_entries/services/terminal_command_service.dart';
 import '../../launcher/services/launcher_service.dart';
 import '../../logs/services/log_service.dart';
 import '../../../shared/services/managed_storage_service.dart';
@@ -45,6 +46,10 @@ class LibraryController extends ChangeNotifier {
   final ArchiveService archives;
   final BackupService backup;
   final DesktopEntryService entries;
+  TerminalCommandService? get terminalCommands =>
+      entries is TerminalCommandService
+      ? entries as TerminalCommandService
+      : null;
   final ProcessService processes;
   final ManagedStorageService storage;
   late final UpdateService updates;
@@ -117,6 +122,7 @@ class LibraryController extends ChangeNotifier {
       throw StateError('Stop profile before deletion');
     }
     await entries.remove(profile.id);
+    await terminalCommands?.removeTerminalCommands(profile.id);
     await runtime.cleanupTemporary(profile.id);
     await runtime.deleteManaged(runtime.profileRoot(profile.id));
     repository.removeProfile(profile.id);

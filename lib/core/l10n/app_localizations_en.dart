@@ -72,6 +72,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get archive => 'Portable archive';
 
   @override
+  String get appImage => 'AppImage file';
+
+  @override
+  String get appImageHelp =>
+      'An independent AppImage copy is stored without running it. Embedded application icons are read safely and shown in the gallery; automatic selection uses the detected logo. You can choose a different image. Profiles use XDG paths; applications that ignore them need their own flags. FUSE/runtime dependencies may be required. Adjacent .home/.config directories are not imported.';
+
+  @override
+  String get appImageIconToolMissing =>
+      'Reading embedded AppImage icons needs 7-Zip (7zz or 7z) on the host. Install the 7zip package using your package manager, then import again. You can still choose an image manually.';
+
+  @override
+  String get appImageIconUnsupported =>
+      'This AppImage filesystem is not supported by the installed icon reader (for example DwarFS). No application was run. Choose an image manually or use the fallback icon.';
+
+  @override
+  String get appImageIconUnavailable =>
+      'No readable embedded application icon was found, or icon reading failed or exceeded its limits. Choose an image manually or use the fallback icon. No application was run.';
+
+  @override
   String get chooseExecutable => 'Choose an executable';
 
   @override
@@ -182,7 +201,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyLibraryDetail =>
-      'Add an executable, application folder or portable archive to create independent profiles.';
+      'Add an executable, application folder, portable archive or AppImage to create independent profiles.';
 
   @override
   String get selectApplication => 'Select an application to see its profiles';
@@ -231,6 +250,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeShortcut => 'Remove desktop shortcut';
+
+  @override
+  String get terminalCommand => 'Terminal command';
+
+  @override
+  String get createTerminalCommand => 'Create command';
+
+  @override
+  String get terminalCommandName => 'Command name (for example rpcs3)';
+
+  @override
+  String get terminalCommandHelp =>
+      'Create a command in ~/.local/bin to launch this specific profile through Atyaf. It keeps profile settings, approval and logs. Use different command names for different accounts. Existing commands are never overwritten. Renaming a profile does not rename its commands.';
+
+  @override
+  String get terminalCommandInvalid =>
+      'Use 1–64 lowercase English letters, digits, dots, underscores or hyphens, starting with a letter. Shell built-in names are reserved.';
+
+  @override
+  String get terminalArgumentsHelp =>
+      'This command accepts no extra arguments. Configure application arguments in the Atyaf profile editor.';
+
+  @override
+  String terminalCommandCreated(String name) {
+    return 'Type $name in your terminal to launch this profile. First launches and changed executables still require approval in Atyaf.';
+  }
+
+  @override
+  String terminalCommandConflict(String detail) {
+    return 'This name is already used by another profile or command: $detail. Choose a different name; nothing was replaced.';
+  }
+
+  @override
+  String terminalCommandUnsafe(String detail) {
+    return 'The command could not be managed safely. Existing files were preserved. Details: $detail';
+  }
+
+  @override
+  String get terminalPathMissing =>
+      '~/.local/bin is not in the host PATH. For a Bash/Zsh session, run the line below before using the command. Add it to your shell configuration yourself if you want it to persist; Atyaf does not edit shell files. Shell aliases/functions may take precedence over this command.';
+
+  @override
+  String get terminalPathCommand => 'export PATH=\"\$HOME/.local/bin:\$PATH\"';
+
+  @override
+  String get existingTerminalCommands => 'Commands for this profile';
+
+  @override
+  String get removeTerminalCommands => 'Remove terminal commands';
+
+  @override
+  String get removeTerminalCommandsConfirm =>
+      'Remove this profile’s unchanged Atyaf terminal commands? The application, profile data, desktop shortcuts and running processes stay unchanged. Modified files are left untouched.';
+
+  @override
+  String get terminalCommandsRemoved =>
+      'Terminal commands removed. The profile and its data were preserved.';
+
+  @override
+  String terminalCommandsPreserved(String names) {
+    return 'Managed commands removed. Modified files were left untouched and are no longer managed: $names';
+  }
 
   @override
   String get logs => 'Launch history and logs';
@@ -459,7 +540,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateHelp =>
-      'Updates are manual. Select a complete folder or tar.gz, tar.xz or tar.zst archive. Only application files will be replaced; profiles, data and shortcuts remain unchanged.';
+      'Updates are manual. Select a complete folder, tar.gz, tar.xz or tar.zst archive, or a new AppImage. Only application files will be replaced; names, chosen icons, profiles, data and shortcuts remain unchanged. AppImages run as files, without automatic extraction or dependency installation.';
 
   @override
   String get updateRunning =>

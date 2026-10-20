@@ -28,6 +28,7 @@ class _ApplicationEditorState extends State<ApplicationEditor> {
   );
   late final wmClass = TextEditingController(text: widget.application.wmClass);
   late String? iconPng = widget.application.iconPng;
+  late bool iconAutomatic = widget.application.iconAutomatic;
   @override
   void dispose() {
     name.dispose();
@@ -61,6 +62,7 @@ class _ApplicationEditorState extends State<ApplicationEditor> {
                 executableRelative: widget.application.executableRelative,
                 wmClass: wmClass.text.trim(),
                 iconPng: iconPng,
+                iconAutomatic: iconAutomatic,
               ),
             );
           },
@@ -127,13 +129,19 @@ class _ApplicationEditorState extends State<ApplicationEditor> {
                   ),
                 );
                 if (result != null && mounted) {
-                  setState(() => iconPng = result.isEmpty ? null : result);
+                  setState(() {
+                    iconPng = result.isEmpty ? null : result;
+                    iconAutomatic = result.isEmpty;
+                  });
                 }
               },
             ),
             if (iconPng != null)
               TextButton(
-                onPressed: () => setState(() => iconPng = null),
+                onPressed: () => setState(() {
+                  iconPng = null;
+                  iconAutomatic = true;
+                }),
                 child: Text(l.automaticIcon),
               ),
           ],

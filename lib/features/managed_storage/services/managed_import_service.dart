@@ -29,7 +29,8 @@ class ManagedImportService {
       executable: p.join(destination, relative),
       executableRelative: relative,
       portableRoot: destination,
-      iconPng: iconPng,
+      iconPng: iconPng ?? source.defaultIconPng,
+      iconAutomatic: iconPng == null && source.isAppImage,
     );
     await storage.replace(
       source,

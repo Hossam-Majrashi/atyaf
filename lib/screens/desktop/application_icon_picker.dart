@@ -13,7 +13,9 @@ class ApplicationIconPicker extends StatefulWidget {
     super.key,
     required this.root,
     required this.entries,
+    this.notice,
   });
+  final String? notice;
   final String root;
   final DesktopEntryService entries;
   @override
@@ -255,6 +257,10 @@ class _ApplicationIconPickerState extends State<ApplicationIconPicker> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (widget.notice != null) ...[
+                        Text(widget.notice!),
+                        const SizedBox(height: 12),
+                      ],
                       Text(l.applicationIconHelp),
                       const SizedBox(height: 12),
                       SelectableText(root),

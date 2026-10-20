@@ -41,10 +41,11 @@
 ### المميزات
 
 - **حسابات مستقلة:** مسارات منفصلة للإعدادات والبيانات والتخزين المؤقت والحالة والملفات المؤقتة، مع تخصيص وسائط التشغيل ومتغيرات البيئة ومجلد العمل.
-- **مكتبة برامج محلية:** إضافة ملف تنفيذي مثبت، أو استيراد مجلد برنامج كامل أو أرشيف محمول بصيغة `.tar.gz` أو `.tar.xz` أو `.tar.zst`.
+- **مكتبة برامج محلية:** إضافة ملف تنفيذي مثبت، أو استيراد مجلد برنامج كامل أو أرشيف محمول بصيغة `.tar.gz` أو `.tar.xz` أو `.tar.zst` أو ملف `.AppImage`.
 - **اختيار أيقونة من صور المشروع:** بعد اختيار الملف التنفيذي، تصفح صور المشروع ومجلداته الفرعية واختر أيقونة البرنامج، أو استخدم الاكتشاف التلقائي. يمكن تغييرها لاحقًا من «تعديل ← اختر أيقونة البرنامج». تُحفظ نسخة مستقلة مع المكتبة وتُحدّث أيقونات اختصارات الحسابات الموجودة عند الحفظ.
-- **تحديث يدوي دون فقد الحسابات:** استبدال ملفات البرنامج من مجلد أو أرشيف جديد مع الحفاظ على بيانات الحسابات وإعداداتها، والتراجع عن الاستبدال عند فشل العملية. لا توجد تحديثات شبكية أو تلقائية.
+- **تحديث يدوي دون فقد الحسابات:** استبدال ملفات البرنامج من مجلد أو أرشيف أو AppImage جديد مع الحفاظ على الاسم والأيقونة المختارة وبيانات الحسابات وإعداداتها، والتراجع عن الاستبدال عند فشل العملية. لا توجد تحديثات شبكية أو تلقائية.
 - **اختصارات بأسماء الحسابات:** حفظ الحساب ينشئ اختصارًا باسمه في قائمة التطبيقات، بأيقونة البرنامج الأصلية عند اكتشافها، أو أيقونة أطياف كبديل. يمكن تحديث اختصارات الحسابات السابقة من زر «إضافة إلى قائمة تطبيقات الجهاز».
+- **أوامر الطرفية:** إنشاء أمر مثل `rpcs3` أو `rpcs3-work` لكل حساب من زر «أمر الطرفية». يعمل عبر أطياف بإعدادات الحساب واعتماده وسجلاته، دون استبدال أوامر الجهاز الموجودة.
 - **تشغيل مباشر:** الاختصارات المعتمدة تشغّل الحساب دون ظهور نافذة أطياف، مع بقاء المشرف في الخلفية لتسجيل المخرجات وحالة الخروج. التشغيل الأول أو تغيّر الملف التنفيذي يتطلب مراجعة وتأكيدًا.
 - **متصفح الجهاز الافتراضي:** الروابط التي تفتحها البرامج عبر `xdg-open` تستخدم إعدادات الجهاز بدل إعدادات الحساب المعزول. تبقى متغيرات `PATH` و`BROWSER` المخصصة محترمة.
 - **إدارة العمليات:** تشغيل وإيقاف تدريجي وإعادة تشغيل، مع إيقاف قسري منفصل ومؤكد عند الحاجة. إغلاق نافذة أطياف لا يوقف البرامج المفتوحة؛ يبقى المشرف مخفيًا حتى اكتمال سجلات البرامج التي شغّلها، ثم ينتهي تلقائيًا.
@@ -58,6 +59,9 @@
 2. أنشئ حسابًا وسمّه، واضبط المسارات أو وسائط التشغيل إذا كان البرنامج يحتاج خيارات خاصة بالملفات الشخصية.
 3. راجع الملف التنفيذي واعتمده عند التشغيل الأول.
 4. شغّل الحساب من أطياف أو ابحث عن اسمه في قائمة تطبيقات الجهاز. لتجديد اختصار موجود وأيقونته، اضغط «إضافة إلى قائمة تطبيقات الجهاز».
+5. للتشغيل من الطرفية، اضغط «أمر الطرفية» في بطاقة الحساب، واختر اسمًا مثل `rpcs3` ثم «إنشاء الأمر». بعدها اكتب `rpcs3` في الطرفية. تُنشأ الأوامر في `~/.local/bin`؛ إن لم يكن في PATH يظهر سطر إرشادي لإضافته دون تعديل ملفات الصدفة تلقائيًا. الأوامر خاصة بالحساب وتبقى بأسمائها عند إعادة تسميته؛ يمكن إزالتها من الحوار نفسه. قد تتقدّم aliases أو دوال الصدفة عليها. لا تقبل وسائط إضافية؛ اضبطها في محرر الحساب. يبقى مشرف أطياف عملية أمامية حتى اكتمال التشغيل والسجلات؛ إغلاق الطرفية أو مقاطعتها قد يوقفه. حذف الحساب أو استعادة المكتبة يزيل الأوامر المُدارة غير المعدّلة، ولا يعيد إنشائها تلقائيًا.
+
+لاستيراد AppImage اختر «إضافة تطبيق ← ملف AppImage»، وراجع الملف ثم اختر الأيقونة والاسم وأنشئ حساباتك كالمعتاد. تُحفظ نسخة مستقلة داخل المكتبة وتُمنح صلاحية التنفيذ دون تغيير الأصل أو تشغيله أثناء الاستيراد، ولا تُنسخ مجلدات `.home` و`.config` المجاورة. لتحديثه اختر «تحديث ← ملف AppImage» وحدّد النسخة الجديدة وأكّد الاستبدال؛ تغيير اسم ملف الإصدار لا يغيّر مسار التشغيل المُدار أو حساباتك. يمكن تعديل الاسم والأيقونة لاحقًا من «تعديل». تظهر الأيقونات المضمّنة تلقائيًا في المعرض عند توفر 7-Zip ‏(`7zz` أو `7z` من حزمة `7zip`) على المضيف، دون تشغيل AppImage أو تركيبه. يبحث القارئ في `.DirIcon` وملف `.desktop` ومسارات الأيقونات الداخلية؛ تُقرأ الصور فقط وتُحفظ نسخ PNG مستقلة. يستخدم زر «استخدام الأيقونة التلقائية» الشعار المكتشف، وتتبع الأيقونة التلقائية تحديث الإصدار بينما تبقى الأيقونة التي تختارها يدويًا كما هي. عند غياب الأداة أو وجود نظام ملفات غير مدعوم مثل DwarFS تظهر رسالة واضحة مع بقاء الاختيار اليدوي متاحًا. قد يحتاج التشغيل FUSE واعتماديات يوفرها الجهاز، وتحتاج البرامج التي تتجاهل XDG وسائط خاصة بها لفصل الحسابات؛ لا يُضاف تجاوز أمني أو استخراج كامل للتطبيق.
 
 إذا ظهرت أخطاء KWallet في برنامج Electron/Chromium، تحقق من محفظة الجهاز أولًا. عند استخدام خدمة Secret Service تعمل بدلًا منها، يتوفر في محرر الحساب خيار «Electron/Chromium: استخدام Secret Service» بتأكيد صريح. يغيّر مخزن التشفير وقد يتطلب تسجيل الدخول مجددًا؛ لا ينقل بيانات الدخول القديمة ولا يغيّر إعدادات النظام. احفظ الحساب وأعد تشغيله للتطبيق. يشرح سجل التشغيل أخطاء الشهادات `-202` وانقطاع المشرف؛ لا تُعطَّل حماية الشهادات ولا تُختلق رموز خروج مفقودة.
 
@@ -109,7 +113,9 @@ flutter build linux --release --target-platform linux-x64
 
 </div>
 
-تُحفظ الحزم في `dist/`. تدعم إعدادات المشروع Linux x86-64 وAArch64؛ يتطلب بناء ARM64 جهازًا أو بيئة Linux من المعمارية نفسها وأدوات Flutter المناسبة. راجع ملاحظات البناء للقيود؛ لا يُفترض توفر حزم ARM64 مبنية لمجرد وجود دعمها في السكربتات.
+تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.0-linux-x86_64.AppImage` و`atyaf-1.2.0-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
+
+تجد التنزيلات المنشورة في [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). يستخدم مسار [Linux release](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) مشغّلات أصلية منفصلة للمعماريتين، ويختبر المشروع ويفحص ELF وبيانات الحزم وzsync وFlatpak قبل نشر 14 ملفًا و`SHA256SUMS`. لا يُنشر الإصدار إلا بعد نجاح المعماريتين؛ لا يُفترض توفر حزمة لمجرد وجود إعداد بنائها. تفاصيل التشغيل والتحقق في [ملاحظات البناء](BUILD_NOTES.md).
 
 ### الأمان والخصوصية
 
@@ -159,10 +165,11 @@ The screenshots are displayed in the Arabic section above:
 ### Features
 
 - **Independent profiles:** Separate config, data, cache, state and temporary paths, with configurable arguments, environment variables and working directory.
-- **Local application library:** Reference an installed executable, or import a complete application folder or a portable `.tar.gz`, `.tar.xz` or `.tar.zst` archive.
+- **Local application library:** Reference an installed executable, or import a complete application folder, a portable `.tar.gz`, `.tar.xz` or `.tar.zst` archive, or an `.AppImage` file.
 - **Choose an icon from project images:** After selecting an executable, browse images throughout the project and its subfolders, or keep automatic discovery. Change it later through **Edit → Choose an application icon**. A separate copy is saved with the library, and existing account shortcut icons are refreshed on save.
-- **Manual updates without losing profiles:** Replace application files from a new folder or archive while preserving profile data and settings, with rollback on failed replacement. No remote or automatic update checks.
+- **Manual updates without losing profiles:** Replace application files from a new folder, archive or AppImage while preserving the name, chosen icon, profile data and settings, with rollback on failed replacement. No remote or automatic update checks.
 - **Account-named shortcuts:** Saving a profile adds a system applications-menu shortcut with its own name and the original application's icon when discoverable, falling back to Atyaf's icon. Existing shortcuts can be refreshed using **Add to applications menu**.
+- **Terminal commands:** Create a per-profile command such as `rpcs3` or `rpcs3-work` using **Terminal command**. It invokes Atyaf with the account's settings, approval and logging, without replacing existing host commands.
 - **Direct launching:** Approved shortcuts launch without the Atyaf window. A background supervisor preserves complete output and exit status. First launches and changed executables require review and approval.
 - **Host default browser:** Links opened through `xdg-open` use the device's desktop settings rather than isolated profile defaults. Explicit `PATH` and `BROWSER` overrides are preserved.
 - **Process management:** Launch, stop gracefully and restart, with force termination as a separate confirmed action. Closing the Atyaf window leaves programs running; its hidden supervisor exits automatically once its own programs' logs and exit status have been saved.
@@ -176,6 +183,9 @@ The screenshots are displayed in the Arabic section above:
 2. Create and name a profile. Configure paths or arguments if the application requires its own profile options.
 3. Review and approve the executable on the first launch.
 4. Launch from Atyaf or search for the profile name in your system applications menu. Use **Add to applications menu** to refresh an existing shortcut and its icon.
+5. To launch from a terminal, select **Terminal command** on the profile card, enter a name such as `rpcs3`, then **Create command**. Type `rpcs3` in your terminal. Commands live in `~/.local/bin`; if it is not in PATH, the dialog shows instructions without editing shell files. Commands remain bound to their specific profile ID and are not renamed automatically; remove them from the same dialog. Shell aliases/functions can take precedence. Extra arguments are explicitly refused; configure them in the profile editor. The Atyaf supervisor is a foreground process until execution/logging finishes; closing/interruption of the terminal can stop it. Profile deletion or library restoration removes unchanged managed commands without recreating them automatically.
+
+For AppImages, choose **Add application → AppImage file**, review the file, choose an icon and name, and create profiles as usual. An independent managed copy receives executable permission without changing or running the original during import; adjacent `.home`/`.config` directories are not copied. Use **Update → AppImage file** to select and confirm a new version: versioned source filenames do not change the managed launch path or your profiles. Change the name or icon later through **Edit**. Embedded application icons appear in the gallery when host 7-Zip (`7zz` or `7z`, from the `7zip` package) is available, without executing or mounting AppImage. The reader checks `.DirIcon`, desktop metadata and internal icon paths, reading only images and saving independent normalized PNG copies. **Use automatic icon** selects the detected logo; automatic icons follow version updates while manual image overrides are preserved. Missing tools or unsupported filesystems such as DwarFS show an explicit notice and retain manual selection. Launching may require host FUSE/runtime dependencies, and applications that ignore XDG need application-specific profile arguments. No security bypass or full application extraction is added.
 
 For Electron/Chromium KWallet errors, check the host wallet first. If you intentionally use an active Secret Service instead, the profile editor offers **Electron/Chromium: use Secret Service** with explicit confirmation. This changes the encryption backend and may require signing in again; it neither migrates existing credentials nor changes system settings. Save and restart the profile to apply. Launch logs explain certificate error `-202` and interrupted supervision; certificate checks remain enabled and missing exit codes are never invented.
 
@@ -215,7 +225,9 @@ To generate DEB, RPM, Arch, general archive and AppImage packages, or a Flatpak 
 ./flatpak_linux.sh x64
 ```
 
-Packages are written to `dist/`. Project configuration supports Linux x86-64 and AArch64. ARM64 builds require a matching native Linux machine or environment and suitable Flutter tools. See the build notes for limitations; ARM64 script support does not imply that prebuilt ARM64 packages are available.
+Packages are written to `dist/`, for example `atyaf-1.2.0-linux-x86_64.AppImage` and `atyaf-1.2.0-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
+
+Published downloads are under [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). The [Linux release workflow](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) uses separate architecture-native runners, runs analysis/tests, and inspects ELF headers, package metadata, zsync and Flatpak before publishing 14 assets plus `SHA256SUMS`. Both architectures must pass before publication; a build configuration alone does not imply an available download. See [build notes](BUILD_NOTES.md) for operation and verification details.
 
 ### Security and privacy
 

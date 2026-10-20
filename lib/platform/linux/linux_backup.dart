@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import '../../features/backup/services/backup_service.dart';
+import '../../features/desktop_entries/services/terminal_command_service.dart';
 import '../../shared/services/process_service.dart';
 import '../../shared/models/library_models.dart';
 import '../../shared/services/runtime_service.dart';
@@ -12,7 +13,14 @@ import 'linux_archives.dart';
 import 'linux_repository.dart';
 
 class LinuxBackup implements BackupService {
-  LinuxBackup(this.runtime, this.repository, this.archives, this.processes);
+  LinuxBackup(
+    this.runtime,
+    this.repository,
+    this.archives,
+    this.processes, {
+    this.terminalCommands,
+  });
+  final TerminalCommandService? terminalCommands;
   final RuntimeService runtime;
   final LinuxRepository repository;
   final LinuxArchives archives;
@@ -55,6 +63,9 @@ class LinuxBackup implements BackupService {
     final staging = '${runtime.root}/restore-${const Uuid().v4()}';
     final rollback = '${runtime.root}/rollback-${const Uuid().v4()}';
     final moved = <String>[];
+    final oldProfileIds = repository.profiles
+        .map((profile) => profile.id)
+        .toList();
     LinuxRepository? imported;
     try {
       await archives.extractTo(source, staging);
@@ -183,6 +194,9 @@ class LinuxBackup implements BackupService {
           }
         }
         rethrow;
+      }
+      for (final id in oldProfileIds) {
+        await terminalCommands?.removeTerminalCommands(id);
       }
     } finally {
       imported?.close();

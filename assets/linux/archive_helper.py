@@ -5,6 +5,7 @@ import os
 from pathlib import Path, PurePosixPath
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tarfile
@@ -175,6 +176,48 @@ def copy_folder(source, destination):
         raise
 
 
+def copy_appimage(source, destination):
+    """Copy an AppImage as data, never run its runtime or extraction flags."""
+    root = Path(destination).absolute()
+    # O_NONBLOCK prevents a selected FIFO/device from blocking before fstat.
+    fd = os.open(source, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    with os.fdopen(fd, 'rb') as stream:
+        info = os.fstat(stream.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o6000:
+            raise ValueError('AppImage must be a regular, non-privileged file')
+        if info.st_size < 64 or info.st_size > LIMIT:
+            raise ValueError('AppImage size must be between 64 bytes and 8 GiB')
+        header = stream.read(64)
+        if (header[:7] != b'\x7fELF\x02\x01\x01' or
+                header[8:11] not in (b'AI\x01', b'AI\x02') or
+                struct.unpack_from('<H', header, 16)[0] not in (2, 3) or
+                struct.unpack_from('<H', header, 18)[0] not in (62, 183)):
+            raise ValueError('Invalid x64/ARM64 AppImage header')
+        root.mkdir(mode=0o700, parents=True, exist_ok=False)
+        try:
+            stream.seek(0)
+            total = 0
+            with open(root / 'application.AppImage', 'xb') as output:
+                while True:
+                    chunk = stream.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    if total > LIMIT:
+                        raise ValueError('AppImage size limit exceeded')
+                    output.write(chunk)
+            after = os.fstat(stream.fileno())
+            if (total != info.st_size or
+                    (after.st_size, after.st_mtime_ns, after.st_ctime_ns) !=
+                    (info.st_size, info.st_mtime_ns, info.st_ctime_ns)):
+                raise ValueError('AppImage changed during copy')
+            # Only the independent managed copy receives executable permission.
+            os.chmod(root / 'application.AppImage', 0o700)
+        except BaseException:
+            shutil.rmtree(root)
+            raise
+
+
 def backup(root, snapshot, output):
     root = Path(root).resolve()
     def safe(info):
@@ -206,6 +249,8 @@ def main():
         extract(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'copy' and len(sys.argv) == 4:
         copy_folder(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == 'appimage' and len(sys.argv) == 4:
+        copy_appimage(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'backup' and len(sys.argv) == 5:
         backup(*sys.argv[2:])
     else:

@@ -72,6 +72,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get archive => 'أرشيف برنامج محمول';
 
   @override
+  String get appImage => 'ملف AppImage';
+
+  @override
+  String get appImageHelp =>
+      'تُحفظ نسخة مستقلة من AppImage دون تشغيلها. تُقرأ أيقونات التطبيق المضمّنة بأمان وتظهر في المعرض؛ يستخدم الاختيار التلقائي الشعار المكتشف، ويمكنك اختيار صورة أخرى. تستخدم الحسابات مسارات XDG؛ البرامج التي تتجاهلها تحتاج وسائط خاصة بها. قد يتطلب التشغيل FUSE أو اعتماديات أخرى. لا تُستورد مجلدات ‎.home/‎.config المجاورة.';
+
+  @override
+  String get appImageIconToolMissing =>
+      'تحتاج قراءة أيقونات AppImage المضمّنة إلى 7-Zip ‏(7zz أو 7z) على الجهاز المضيف. ثبّت حزمة 7zip بمدير الحزم ثم أعد الاستيراد. يمكنك اختيار صورة يدويًا دون ذلك.';
+
+  @override
+  String get appImageIconUnsupported =>
+      'نظام الملفات داخل AppImage غير مدعوم بقارئ الأيقونات المثبّت، مثل DwarFS. لم يُشغّل التطبيق. اختر صورة يدويًا أو استخدم الأيقونة البديلة.';
+
+  @override
+  String get appImageIconUnavailable =>
+      'لم تُعثر على أيقونة تطبيق مضمّنة قابلة للقراءة، أو فشلت القراءة أو تجاوزت حدودها. اختر صورة يدويًا أو استخدم الأيقونة البديلة. لم يُشغّل التطبيق.';
+
+  @override
   String get chooseExecutable => 'اختر ملفًا تنفيذيًا';
 
   @override
@@ -182,7 +201,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get emptyLibraryDetail =>
-      'أضف ملفًا تنفيذيًا أو مجلد برنامج أو أرشيفًا محمولًا لإنشاء ملفات شخصية مستقلة.';
+      'أضف ملفًا تنفيذيًا أو مجلد برنامج أو أرشيفًا محمولًا أو AppImage لإنشاء ملفات شخصية مستقلة.';
 
   @override
   String get selectApplication => 'اختر برنامجًا لعرض ملفاته الشخصية';
@@ -231,6 +250,68 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get removeShortcut => 'إزالة الاختصار';
+
+  @override
+  String get terminalCommand => 'أمر الطرفية';
+
+  @override
+  String get createTerminalCommand => 'إنشاء الأمر';
+
+  @override
+  String get terminalCommandName => 'اسم الأمر، مثل rpcs3';
+
+  @override
+  String get terminalCommandHelp =>
+      'أنشئ أمرًا في ‎~/.local/bin لتشغيل هذا الحساب تحديدًا عبر أطياف، مع إعداداته واعتماده وسجلاته. اختر أسماء مختلفة لأوامر الحسابات المتعددة. لا تُستبدل الأوامر الموجودة. تغيير اسم الحساب لا يغيّر أسماء أوامره.';
+
+  @override
+  String get terminalCommandInvalid =>
+      'استخدم 1–64 حرفًا إنجليزيًا صغيرًا أو رقمًا أو نقطة أو شرطة أو شرطة سفلية، مع البدء بحرف. أسماء أوامر الصدفة المضمّنة محجوزة.';
+
+  @override
+  String get terminalArgumentsHelp =>
+      'لا يقبل هذا الأمر وسائط إضافية. اضبط وسائط التطبيق من محرر الحساب في أطياف.';
+
+  @override
+  String terminalCommandCreated(String name) {
+    return 'اكتب $name في الطرفية لتشغيل هذا الحساب. يظل التشغيل الأول أو تغيّر الملف التنفيذي بحاجة إلى الاعتماد داخل أطياف.';
+  }
+
+  @override
+  String terminalCommandConflict(String detail) {
+    return 'الاسم مستخدم بالفعل لحساب آخر أو أمر موجود: $detail. اختر اسمًا مختلفًا؛ لم يُستبدل أي ملف.';
+  }
+
+  @override
+  String terminalCommandUnsafe(String detail) {
+    return 'تعذّرت إدارة الأمر بأمان، مع الحفاظ على الملفات الموجودة. التفاصيل: $detail';
+  }
+
+  @override
+  String get terminalPathMissing =>
+      'المجلد ‎~/.local/bin غير موجود في PATH للمضيف. لجلسة Bash أو Zsh نفّذ السطر التالي قبل استخدام الأمر. أضفه بنفسك إلى إعدادات صدفتك إن أردت استمراره؛ لا يعدّل أطياف ملفات الصدفة. قد تتقدّم الأسماء المستعارة والدوال على هذا الأمر.';
+
+  @override
+  String get terminalPathCommand => 'export PATH=\"\$HOME/.local/bin:\$PATH\"';
+
+  @override
+  String get existingTerminalCommands => 'أوامر هذا الحساب';
+
+  @override
+  String get removeTerminalCommands => 'إزالة أوامر الطرفية';
+
+  @override
+  String get removeTerminalCommandsConfirm =>
+      'هل تريد إزالة أوامر أطياف غير المعدّلة لهذا الحساب؟ يبقى التطبيق وبيانات الحساب واختصارات سطح المكتب والعمليات العاملة كما هي. تُترك الملفات المعدّلة دون مساس.';
+
+  @override
+  String get terminalCommandsRemoved =>
+      'أُزيلت أوامر الطرفية مع الحفاظ على الحساب وبياناته.';
+
+  @override
+  String terminalCommandsPreserved(String names) {
+    return 'أُزيلت الأوامر المُدارة. تُركت الملفات المعدّلة دون مساس وأصبحت خارج الإدارة: $names';
+  }
 
   @override
   String get logs => 'سجل التشغيل والمخرجات';
@@ -459,7 +540,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updateHelp =>
-      'التحديث يدوي. اختر مجلدًا كاملًا أو أرشيف tar.gz أو tar.xz أو tar.zst. تُستبدل ملفات البرنامج فقط؛ تبقى الملفات الشخصية وبياناتها واختصاراتها كما هي.';
+      'التحديث يدوي. اختر مجلدًا كاملًا أو أرشيف tar.gz أو tar.xz أو tar.zst أو ملف AppImage جديدًا. تُستبدل ملفات البرنامج فقط؛ تبقى الأسماء والأيقونات المختارة والحسابات وبياناتها واختصاراتها كما هي. يعمل AppImage كملف دون استخراج تلقائي أو تثبيت اعتماديات.';
 
   @override
   String get updateRunning =>

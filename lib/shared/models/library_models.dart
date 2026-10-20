@@ -10,10 +10,13 @@ class Application {
     this.executableRelative,
     this.wmClass = '',
     this.iconPng,
+    this.iconAutomatic = false,
   });
   final String id, name, executable, wmClass;
   // A normalized PNG copy, independent of source paths and application updates.
   final String? iconPng;
+  // Automatic AppImage icons follow manual version replacement; overrides do not.
+  final bool iconAutomatic;
   final String? portableRoot, executableRelative;
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -23,6 +26,7 @@ class Application {
     'executableRelative': executableRelative,
     'wmClass': wmClass,
     'iconPng': iconPng,
+    'iconAutomatic': iconAutomatic,
   };
   factory Application.fromJson(Map<String, dynamic> j) => Application(
     id: j['id'] as String,
@@ -32,6 +36,7 @@ class Application {
     executableRelative: j['executableRelative'] as String?,
     wmClass: j['wmClass'] as String? ?? '',
     iconPng: _validatedIcon(j['iconPng'] as String?),
+    iconAutomatic: j['iconAutomatic'] == true,
   );
 }
 

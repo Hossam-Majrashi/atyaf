@@ -1,0 +1,28 @@
+name: Set up native Linux build tools
+description: Install build dependencies and the pinned Flutter SDK on a native Linux runner.
+runs:
+  using: composite
+  steps:
+    - name: Install Linux dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y \
+          clang cmake ninja-build pkg-config g++ libgtk-3-dev liblzma-dev \
+          libsqlite3-dev libarchive-tools dpkg-dev rpm rpm2cpio zstd desktop-file-utils \
+          appstream flatpak flatpak-builder ostree curl file zsync git unzip xz-utils \
+          gsettings-desktop-schemas librsvg2-common 7zip dbus-x11
+    - name: Install Flutter 3.47.7 from its official tag
+      shell: bash
+      run: |
+        git clone --depth 1 --branch 3.47.7 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+        echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+        echo "FLUTTER_ROOT=$RUNNER_TEMP/flutter" >> "$GITHUB_ENV"
+    - name: Prepare Flutter Linux
+      shell: bash
+      run: |
+        flutter config --enable-linux-desktop --no-analytics
+        flutter precache --linux
+        flutter --version
+        flutter pub get
+        bash tool/generate_l10n.sh

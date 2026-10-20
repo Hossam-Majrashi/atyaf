@@ -168,6 +168,36 @@ abstract class AppLocalizations {
   /// **'Portable archive'**
   String get archive;
 
+  /// No description provided for @appImage.
+  ///
+  /// In en, this message translates to:
+  /// **'AppImage file'**
+  String get appImage;
+
+  /// No description provided for @appImageHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'An independent AppImage copy is stored without running it. Embedded application icons are read safely and shown in the gallery; automatic selection uses the detected logo. You can choose a different image. Profiles use XDG paths; applications that ignore them need their own flags. FUSE/runtime dependencies may be required. Adjacent .home/.config directories are not imported.'**
+  String get appImageHelp;
+
+  /// No description provided for @appImageIconToolMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading embedded AppImage icons needs 7-Zip (7zz or 7z) on the host. Install the 7zip package using your package manager, then import again. You can still choose an image manually.'**
+  String get appImageIconToolMissing;
+
+  /// No description provided for @appImageIconUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This AppImage filesystem is not supported by the installed icon reader (for example DwarFS). No application was run. Choose an image manually or use the fallback icon.'**
+  String get appImageIconUnsupported;
+
+  /// No description provided for @appImageIconUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No readable embedded application icon was found, or icon reading failed or exceeded its limits. Choose an image manually or use the fallback icon. No application was run.'**
+  String get appImageIconUnavailable;
+
   /// No description provided for @chooseExecutable.
   ///
   /// In en, this message translates to:
@@ -357,7 +387,7 @@ abstract class AppLocalizations {
   /// No description provided for @emptyLibraryDetail.
   ///
   /// In en, this message translates to:
-  /// **'Add an executable, application folder or portable archive to create independent profiles.'**
+  /// **'Add an executable, application folder, portable archive or AppImage to create independent profiles.'**
   String get emptyLibraryDetail;
 
   /// No description provided for @selectApplication.
@@ -449,6 +479,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove desktop shortcut'**
   String get removeShortcut;
+
+  /// No description provided for @terminalCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal command'**
+  String get terminalCommand;
+
+  /// No description provided for @createTerminalCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Create command'**
+  String get createTerminalCommand;
+
+  /// No description provided for @terminalCommandName.
+  ///
+  /// In en, this message translates to:
+  /// **'Command name (for example rpcs3)'**
+  String get terminalCommandName;
+
+  /// No description provided for @terminalCommandHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a command in ~/.local/bin to launch this specific profile through Atyaf. It keeps profile settings, approval and logs. Use different command names for different accounts. Existing commands are never overwritten. Renaming a profile does not rename its commands.'**
+  String get terminalCommandHelp;
+
+  /// No description provided for @terminalCommandInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Use 1–64 lowercase English letters, digits, dots, underscores or hyphens, starting with a letter. Shell built-in names are reserved.'**
+  String get terminalCommandInvalid;
+
+  /// No description provided for @terminalArgumentsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This command accepts no extra arguments. Configure application arguments in the Atyaf profile editor.'**
+  String get terminalArgumentsHelp;
+
+  /// No description provided for @terminalCommandCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Type {name} in your terminal to launch this profile. First launches and changed executables still require approval in Atyaf.'**
+  String terminalCommandCreated(String name);
+
+  /// No description provided for @terminalCommandConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'This name is already used by another profile or command: {detail}. Choose a different name; nothing was replaced.'**
+  String terminalCommandConflict(String detail);
+
+  /// No description provided for @terminalCommandUnsafe.
+  ///
+  /// In en, this message translates to:
+  /// **'The command could not be managed safely. Existing files were preserved. Details: {detail}'**
+  String terminalCommandUnsafe(String detail);
+
+  /// No description provided for @terminalPathMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'~/.local/bin is not in the host PATH. For a Bash/Zsh session, run the line below before using the command. Add it to your shell configuration yourself if you want it to persist; Atyaf does not edit shell files. Shell aliases/functions may take precedence over this command.'**
+  String get terminalPathMissing;
+
+  /// No description provided for @terminalPathCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'export PATH=\"\$HOME/.local/bin:\$PATH\"'**
+  String get terminalPathCommand;
+
+  /// No description provided for @existingTerminalCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands for this profile'**
+  String get existingTerminalCommands;
+
+  /// No description provided for @removeTerminalCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove terminal commands'**
+  String get removeTerminalCommands;
+
+  /// No description provided for @removeTerminalCommandsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this profile’s unchanged Atyaf terminal commands? The application, profile data, desktop shortcuts and running processes stay unchanged. Modified files are left untouched.'**
+  String get removeTerminalCommandsConfirm;
+
+  /// No description provided for @terminalCommandsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal commands removed. The profile and its data were preserved.'**
+  String get terminalCommandsRemoved;
+
+  /// No description provided for @terminalCommandsPreserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed commands removed. Modified files were left untouched and are no longer managed: {names}'**
+  String terminalCommandsPreserved(String names);
 
   /// No description provided for @logs.
   ///
@@ -850,7 +976,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateHelp.
   ///
   /// In en, this message translates to:
-  /// **'Updates are manual. Select a complete folder or tar.gz, tar.xz or tar.zst archive. Only application files will be replaced; profiles, data and shortcuts remain unchanged.'**
+  /// **'Updates are manual. Select a complete folder, tar.gz, tar.xz or tar.zst archive, or a new AppImage. Only application files will be replaced; names, chosen icons, profiles, data and shortcuts remain unchanged. AppImages run as files, without automatic extraction or dependency installation.'**
   String get updateHelp;
 
   /// No description provided for @updateRunning.

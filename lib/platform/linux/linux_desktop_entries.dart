@@ -5,17 +5,21 @@ import 'dart:typed_data';
 import 'package:path/path.dart' as p;
 
 import '../../features/desktop_entries/services/desktop_entry_service.dart';
+import '../../features/desktop_entries/services/terminal_command_service.dart';
 import '../../shared/models/library_models.dart';
 import '../../shared/services/runtime_service.dart';
 import 'linux_commands.dart';
 import 'linux_runtime.dart';
+import 'linux_terminal_commands.dart';
 
-class LinuxDesktopEntries implements DesktopEntryService {
+class LinuxDesktopEntries
+    implements DesktopEntryService, TerminalCommandService {
   LinuxDesktopEntries(
     this.runtime,
     this.icon, {
     String? executable,
     String? iconHelper,
+    this.terminalHelper,
   }) : executable =
            executable ??
            Platform.environment['ATYAF_LAUNCHER'] ??
@@ -26,6 +30,32 @@ class LinuxDesktopEntries implements DesktopEntryService {
   final RuntimeService runtime;
   final Uint8List icon;
   final String executable, iconHelper;
+  final String? terminalHelper;
+  late final terminal = LinuxTerminalCommands(
+    runtime,
+    executable,
+    helper: terminalHelper,
+  );
+
+  @override
+  Future<List<TerminalCommand>> terminalCommands(String profileId) =>
+      terminal.terminalCommands(profileId);
+
+  @override
+  Future<TerminalCommand> createTerminalCommand(
+    String profileId,
+    String name, {
+    required String argumentsWarning,
+  }) => terminal.createTerminalCommand(
+    profileId,
+    name,
+    argumentsWarning: argumentsWarning,
+  );
+
+  @override
+  Future<List<String>> removeTerminalCommands(String profileId) =>
+      terminal.removeTerminalCommands(profileId);
+
   static String value(String input) => input
       .replaceAll('\\', '\\\\')
       .replaceAll('\n', '\\n')

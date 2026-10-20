@@ -3,6 +3,40 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('Linux release validation rejects wrong architectures and incomplete assets', () async {
+    final result = await Process.run('python3', [
+      'test/release_validation_test.py',
+    ]);
+    expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+  });
+  for (final script in ['build_linux.sh', 'flatpak_linux.sh']) {
+    for (final arch in ['armv7', 'i686']) {
+      test(
+        '$script explicitly refuses unsupported $arch without building',
+        () async {
+          final temporary = await Directory.systemTemp.createTemp(
+            'atyaf unsupported arch ',
+          );
+          try {
+            final copy = await File(script).copy('${temporary.path}/$script');
+            final result = await Process.run('bash', [copy.path, arch]);
+            expect(result.exitCode, 1);
+            expect(
+              result.stderr.toString(),
+              contains('32-bit builds are unsupported'),
+            );
+            expect(await Directory('${temporary.path}/dist').exists(), isFalse);
+            expect(
+              await Directory('${temporary.path}/build').exists(),
+              isFalse,
+            );
+          } finally {
+            await temporary.delete(recursive: true);
+          }
+        },
+      );
+    }
+  }
   for (final architecture in {'x64': 'x86_64', 'arm64': 'aarch64'}.entries) {
     for (final existingBuild in [false, true]) {
       test(
@@ -41,6 +75,7 @@ void main() {
               'desktop-file-validate',
               'appstreamcli',
               'appimagetool',
+              'zsyncmake',
               'curl',
               'cp',
               'mv',

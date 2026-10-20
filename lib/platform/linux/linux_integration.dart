@@ -52,22 +52,44 @@ final class LinuxIntegration {
       iconHelper,
       await rootBundle.loadString('assets/linux/desktop_icon_helper.py'),
     );
+    final appImageIconHelper = '${runtime.root}/appimage_icons.py';
+    await LinuxCommands.writePrivateFile(
+      appImageIconHelper,
+      await rootBundle.loadString('assets/linux/appimage_icons.py'),
+    );
+    final terminalHelper = '${runtime.root}/terminal_commands.py';
+    await LinuxCommands.writePrivateFile(
+      terminalHelper,
+      await rootBundle.loadString('assets/linux/terminal_commands.py'),
+    );
     final repository = LinuxRepository('${runtime.root}/library.sqlite');
     final processes = LinuxProcesses(runtime, repository);
     processes.reconcile();
     final archives = LinuxArchives(runtime, helper);
     final icon = await rootBundle.load('assets/icon/icon.png');
+    final entries = LinuxDesktopEntries(
+      runtime,
+      icon.buffer.asUint8List(),
+      iconHelper: iconHelper,
+      terminalHelper: terminalHelper,
+    );
     return LibraryController(
       repository: repository,
       runtime: runtime,
       archives: archives,
-      storage: LinuxManagedStorage(runtime, archives),
-      backup: LinuxBackup(runtime, repository, archives, processes),
-      entries: LinuxDesktopEntries(
+      storage: LinuxManagedStorage(
         runtime,
-        icon.buffer.asUint8List(),
-        iconHelper: iconHelper,
+        archives,
+        appImageIconHelper: appImageIconHelper,
       ),
+      backup: LinuxBackup(
+        runtime,
+        repository,
+        archives,
+        processes,
+        terminalCommands: entries,
+      ),
+      entries: entries,
       processes: processes,
       diagnostics: LinuxCrashDiagnostics(),
     );

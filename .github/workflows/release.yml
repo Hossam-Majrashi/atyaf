@@ -1,0 +1,131 @@
+name: Linux release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Analyze and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check release tag matches source version and commit
+        id: version
+        shell: bash
+        run: |
+          version="$(python3 -c "import re; print(re.search(r'^version:\\s*([^+\\s]+)',open('pubspec.yaml').read(),re.M).group(1))")"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          if git show-ref --verify --quiet "refs/tags/v$version"; then
+            [[ "$(git rev-parse "v$version^{commit}")" == "$GITHUB_SHA" ]]
+          fi
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            [[ "$GITHUB_REF_NAME" == "v$version" ]]
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/setup-linux
+      - run: flutter analyze
+      - run: flutter test --concurrency=1 --reporter expanded
+      - run: python3 tool/verify_contract.py
+      - run: bash -n build_linux.sh flatpak_linux.sh
+
+  build:
+    name: Build ${{ matrix.arch }}
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-linux
+      - name: Download architecture-native AppImage tool
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-tools"
+          curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-$ARCH.AppImage" \
+            -o "$RUNNER_TEMP/release-tools/appimagetool"
+          chmod 755 "$RUNNER_TEMP/release-tools/appimagetool"
+          echo "$RUNNER_TEMP/release-tools" >> "$GITHUB_PATH"
+      - name: Build native packages and AppImage.zsync
+        run: bash build_linux.sh '${{ matrix.arch }}'
+      - name: Install architecture-native Flatpak build runtime
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user --noninteractive --assumeyes flathub org.gnome.Platform//50 org.gnome.Sdk//50
+      - name: Build Flatpak
+        run: dbus-run-session -- bash flatpak_linux.sh '${{ matrix.arch }}'
+      - name: Inspect every package without executing its application
+        run: python3 tool/verify_release.py --version '${{ needs.verify.outputs.version }}' --arch '${{ matrix.arch }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: dist/atyaf-${{ needs.verify.outputs.version }}-linux-${{ matrix.arch }}.*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish verified GitHub release
+    needs: [verify, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: linux-*
+          merge-multiple: true
+          path: dist
+      - name: Install data-inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libarchive-tools zstd rpm rpm2cpio flatpak ostree
+      - name: Verify both architectures and generate checksums
+        run: |
+          python3 tool/verify_release.py --version '${{ needs.verify.outputs.version }}' \
+            --arch x86_64 --arch aarch64 --write-checksums
+          test "$(find dist -maxdepth 1 -type f | wc -l)" -eq 15
+      - name: Upload all assets to a draft, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.verify.outputs.version }}
+        shell: bash
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" --json isDraft >/dev/null 2>&1; then
+            test "$(gh release view "$tag" --json isDraft --jq .isDraft)" = true
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --draft --title "Atyaf $VERSION" --notes-file RELEASE_NOTES.md
+          fi
+          gh release upload "$tag" dist/* --clobber
+          test "$(gh release view "$tag" --json assets --jq '.assets | length')" -eq 15
+          gh release edit "$tag" --draft=false --latest

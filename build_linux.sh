@@ -3,14 +3,14 @@ set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 fail() { printf 'Atyaf packaging error: %s\n' "$*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || fail "Required tool missing: $1"; }
-for tool in flutter python3 dpkg-deb rpmbuild bsdtar zstd tar gzip install readlink readelf ldd desktop-file-validate appstreamcli appimagetool curl cp mv ln mktemp rm tee grep date du awk uname; do need "$tool"; done
 arch="${1:-$(uname -m)}"
 case "$arch" in
   x64|x86_64) target=x64; debarch=amd64; rpmarch=x86_64; apparch=x86_64 ;;
   arm64|aarch64) target=arm64; debarch=arm64; rpmarch=aarch64; apparch=aarch64 ;;
-  *) fail "Supported Linux architectures: x64, arm64" ;;
+  *) fail 'Flutter Linux supports x86_64 and aarch64; armv7/i686 32-bit builds are unsupported' ;;
 esac
 case "$(uname -m):$target" in x86_64:x64|aarch64:arm64) ;; *) fail "Native $target Linux host/toolchain required; see BUILD_NOTES.md" ;; esac
+for tool in flutter python3 dpkg-deb rpmbuild bsdtar zstd tar gzip install readlink readelf ldd desktop-file-validate appstreamcli appimagetool zsyncmake curl cp mv ln mktemp rm tee grep date du awk uname basename; do need "$tool"; done
 version="$(python3 -c "import re; print(re.search(r'^version:\\s*([^+\\s]+)',open('pubspec.yaml').read(),re.M).group(1))")"
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][a-zA-Z0-9.-]+)?$ ]] || fail 'Invalid pubspec version'
 # flutter clean removes build/; create the workspace parent before mktemp.
@@ -21,6 +21,7 @@ flutter build linux --release --target-platform "linux-$target"
 python3 tool/normalize_l10n.py
 bundle="$PWD/build/linux/$target/release/bundle"
 [[ -x "$bundle/atyaf" ]] || fail 'Release bundle missing'
+python3 tool/verify_release.py --bundle "$bundle" --arch "$apparch"
 ldd "$bundle/atyaf" | tee "$work/ldd.txt"
 ! grep -q 'not found' "$work/ldd.txt" || fail 'Unresolved release dependencies'
 stage="$work/root"
@@ -36,7 +37,7 @@ install -Dm644 LICENSE "$stage/usr/share/licenses/atyaf/LICENSE"
 install -Dm644 LICENSE "$stage/usr/share/doc/atyaf/copyright"
 desktop-file-validate "$stage/usr/share/applications/com.h.atyaf.desktop"
 # General archive includes the complete install tree and desktop integration assets.
-tar -C "$stage" -czf "dist/atyaf-$version-linux-$target.tar.gz" opt usr
+tar -C "$stage" -czf "dist/atyaf-$version-linux-$apparch.tar.gz" opt usr
 # Debian: GTK and plugin dependencies, plus tools used by the Linux runtime.
 mkdir -p "$stage/DEBIAN"
 cat > "$stage/DEBIAN/control" <<CONTROL
@@ -47,10 +48,11 @@ Maintainer: Hossam Majrashi <Hossam.Majrashi@gmail.com>
 Section: utils
 Priority: optional
 Depends: libgtk-3-0, libglib2.0-0, libstdc++6, libgcc-s1, libc6 (>= 2.34), libsqlite3-0, libx11-6, python3, zstd, coreutils, xdg-utils, xdg-desktop-portal, xdg-desktop-portal-gtk | xdg-desktop-portal-kde | xdg-desktop-portal-gnome
+Recommends: 7zip
 Description: Independent application profiles for Linux
  Manage and launch executables and portable applications with isolated profile paths.
 CONTROL
-dpkg-deb --root-owner-group --build "$stage" "dist/atyaf-$version-linux-$target.deb"
+dpkg-deb --root-owner-group --build "$stage" "dist/atyaf-$version-linux-$apparch.deb"
 rm -rf "$stage/DEBIAN"
 # RPM automatically derives ELF requirements/provides, usable by dnf/yum/zypper.
 rpmroot="$work/rpm"
@@ -65,6 +67,7 @@ URL: https://hossam-majrashi.github.io/Works/
 BuildArch: $rpmarch
 Requires: python3, zstd, coreutils, xdg-utils, xdg-desktop-portal, xdg-desktop-portal-gtk
 Requires: libsqlite3.so.0()(64bit)
+Recommends: 7zip
 %global __os_install_post %{nil}
 %description
 Manage executables and portable applications with independently configured profiles.
@@ -83,8 +86,8 @@ cp -a "$stage/." %{buildroot}/
 /usr/share/doc/atyaf/copyright
 /usr/share/metainfo/com.h.atyaf.metainfo.xml
 SPEC
-rpmbuild --define "_topdir $rpmroot" --define "_dbpath $rpmroot/db" --define '_binary_payload w9.gzdio' --target "$rpmarch" -bb "$rpmroot/SPECS/atyaf.spec"
-cp "$rpmroot/RPMS/$rpmarch/atyaf-$version-1.$rpmarch.rpm" "dist/atyaf-$version-linux-$target.rpm"
+rpmbuild --define "_topdir $rpmroot" --define "_dbpath $rpmroot/db" --define '_rpmformat 4' --define '_binary_payload w9.gzdio' --target "$rpmarch" -bb "$rpmroot/SPECS/atyaf.spec"
+cp "$rpmroot/RPMS/$rpmarch/atyaf-$version-1.$rpmarch.rpm" "dist/atyaf-$version-linux-$apparch.rpm"
 # Arch packages require a native .PKGINFO and zstd tar stream, not an RPM rename.
 cat > "$stage/.PKGINFO" <<PKGINFO
 pkgname = atyaf
@@ -109,8 +112,9 @@ depend = coreutils
 depend = xdg-utils
 depend = xdg-desktop-portal
 depend = xdg-desktop-portal-gtk
+optdepend = 7zip: Read embedded AppImage icons without executing applications
 PKGINFO
-bsdtar --uid 0 --gid 0 -C "$stage" -cf - .PKGINFO opt usr | zstd -T0 -19 -o "dist/atyaf-$version-linux-$target.pkg.tar.zst" -f
+bsdtar --uid 0 --gid 0 -C "$stage" -cf - .PKGINFO opt usr | zstd -T0 -19 -o "dist/atyaf-$version-linux-$apparch.pkg.tar.zst" -f
 rm "$stage/.PKGINFO"
 appdir="$work/Atyaf.AppDir"
 mkdir -p "$appdir/usr/lib/atyaf" "$appdir/usr/share/icons/hicolor/1024x1024/apps"
@@ -150,5 +154,15 @@ expected = 62 if sys.argv[2] == 'x86_64' else 183
 if len(header) != 20 or header[:4] != b'\x7fELF' or header[4:6] != bytes([2, 1]) or struct.unpack('<H', header[18:20])[0] != expected:
     raise SystemExit('Atyaf packaging error: invalid or wrong-architecture AppImage runtime')
 PY
-ARCH="$apparch" appimagetool --appimage-extract-and-run --runtime-file "$runtime_file" "$appdir" "$PWD/dist/atyaf-$version-linux-$target.AppImage"
-printf 'Created all five Linux %s formats in %s/dist\n' "$target" "$PWD"
+appimage="$PWD/dist/atyaf-$version-linux-$apparch.AppImage"
+update_info="gh-releases-zsync|Hossam-Majrashi|atyaf|latest|atyaf-*-linux-$apparch.AppImage.zsync"
+file_url="https://github.com/Hossam-Majrashi/atyaf/releases/download/v$version/$(basename "$appimage")"
+# appimagetool writes its zsync file into the working directory, not beside
+# an absolute destination. Keep both generated files inside dist/.
+(
+  cd "$PWD/dist"
+  ARCH="$apparch" appimagetool --appimage-extract-and-run --runtime-file "$runtime_file" \
+    --updateinformation "$update_info" --file-url "$file_url" "$appdir" "$appimage"
+)
+[[ -s "$appimage.zsync" ]] || fail 'AppImage zsync control file was not generated'
+printf 'Created five Linux %s formats plus AppImage.zsync in %s/dist\n' "$apparch" "$PWD"
