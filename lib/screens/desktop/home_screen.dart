@@ -14,7 +14,7 @@ import 'logs_screen.dart';
 import 'errors_screen.dart';
 import 'application_editor.dart';
 import 'application_icon_picker.dart';
-import 'application_icon_image.dart';
+import 'application_browser.dart';
 import 'profile_editor.dart';
 import 'settings_screen.dart';
 import 'terminal_command_dialog.dart';
@@ -487,35 +487,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget applicationList(AppLocalizations l) => ListView(
-    children: [
-      for (final app in library.applications)
-        Padding(
-          key: ValueKey(app.id),
-          padding: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            selected: library.selected?.id == app.id,
-            selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            leading: app.iconPng == null
-                ? Icon(
-                    app.portableRoot == null
-                        ? Icons.apps_rounded
-                        : Icons.inventory_2_outlined,
-                  )
-                : ApplicationIconImage(
-                    encoded: app.iconPng!,
-                    width: 36,
-                    height: 36,
-                  ),
-            title: Text(app.name, overflow: TextOverflow.ellipsis),
-            onTap: () => library.select(app.id),
-          ),
-        ),
-    ],
+  Widget applicationList(List<Application> applications) => ApplicationBrowser(
+    applications: applications,
+    selectedId: library.selected?.id,
+    onSelected: library.select,
   );
+
+  Future<void> chooseApplication(List<Application> applications) async {
+    final l = AppLocalizations.of(context);
+    final id = await showDialog<String>(
+      context: context,
+      builder: (context) => DesktopDialog(
+        title: l.library,
+        body: ApplicationBrowser(
+          applications: applications,
+          selectedId: library.selected?.id,
+          onSelected: (id) => Navigator.pop(context, id),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l.cancel),
+          ),
+        ],
+      ),
+    );
+    if (id != null && mounted) library.select(id);
+  }
+
   Widget profileCard(Profile profile, AppLocalizations l) {
     final running = library.processes.isRunning(profile.id);
     return Card(
@@ -680,113 +679,140 @@ class _HomeScreenState extends State<HomeScreen> {
     if (app == null) {
       return Center(child: Text(l.selectApplication));
     }
-    return ListView(
-      children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 16,
-          runSpacing: 12,
-          children: [
-            Text(
-              app.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            PopupMenuButton<String>(
-              tooltip: l.edit,
-              enabled: !busy,
-              onSelected: (value) => perform(() async {
-                if (value == 'delete') {
-                  if (await confirm(l.delete, l.deleteConfirm)) {
-                    await library.deleteApplication(app);
-                  }
-                } else if (value == 'update') {
-                  await updateApplication(app);
-                } else {
-                  final updated = await showDialog<Application>(
-                    context: context,
-                    builder: (context) => ApplicationEditor(
-                      application: app,
-                      entries: library.entries,
-                    ),
-                  );
-                  if (updated != null) {
-                    final review = await library.runtime.inspect(
-                      updated.executable,
-                    );
-                    final saved = Application(
-                      id: updated.id,
-                      name: updated.name,
-                      executable: review.path,
-                      portableRoot: updated.portableRoot,
-                      executableRelative: updated.executableRelative,
-                      wmClass: updated.wmClass,
-                      iconPng:
-                          updated.iconPng ??
-                          (updated.iconAutomatic && updated.portableRoot != null
-                              ? await library.entries.readImage(
-                                  p.join(updated.portableRoot!, '.DirIcon'),
-                                )
-                              : null),
-                      iconAutomatic: updated.iconAutomatic,
-                    );
-                    await library.repository.withExclusiveLock(() async {
-                      library.repository.saveApplication(saved);
-                      if (app.iconPng != saved.iconPng) {
-                        await library.entries.refreshIcons(
-                          saved,
-                          library.repository.profiles
-                              .where(
-                                (profile) => profile.applicationId == saved.id,
-                              )
-                              .toList(),
+    final profiles = library.profiles;
+    return CustomScrollView(
+      key: ValueKey(app.id),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 12,
+                children: [
+                  Text(
+                    app.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: l.edit,
+                    enabled: !busy,
+                    onSelected: (value) => perform(() async {
+                      if (value == 'delete') {
+                        if (await confirm(l.delete, l.deleteConfirm)) {
+                          await library.deleteApplication(app);
+                        }
+                      } else if (value == 'update') {
+                        await updateApplication(app);
+                      } else {
+                        final updated = await showDialog<Application>(
+                          context: context,
+                          builder: (context) => ApplicationEditor(
+                            application: app,
+                            entries: library.entries,
+                          ),
                         );
+                        if (updated != null) {
+                          final review = await library.runtime.inspect(
+                            updated.executable,
+                          );
+                          final saved = Application(
+                            id: updated.id,
+                            name: updated.name,
+                            executable: review.path,
+                            portableRoot: updated.portableRoot,
+                            executableRelative: updated.executableRelative,
+                            wmClass: updated.wmClass,
+                            iconPng:
+                                updated.iconPng ??
+                                (updated.iconAutomatic &&
+                                        updated.portableRoot != null
+                                    ? await library.entries.readImage(
+                                        p.join(
+                                          updated.portableRoot!,
+                                          '.DirIcon',
+                                        ),
+                                      )
+                                    : null),
+                            iconAutomatic: updated.iconAutomatic,
+                          );
+                          await library.repository.withExclusiveLock(() async {
+                            library.repository.saveApplication(saved);
+                            if (app.iconPng != saved.iconPng) {
+                              await library.entries.refreshIcons(
+                                saved,
+                                library.repository.profiles
+                                    .where(
+                                      (profile) =>
+                                          profile.applicationId == saved.id,
+                                    )
+                                    .toList(),
+                              );
+                            }
+                          });
+                        }
                       }
-                    });
-                  }
-                }
-              }),
-              itemBuilder: (_) => [
-                PopupMenuItem(value: 'update', child: Text(l.update)),
-                PopupMenuItem(value: 'edit', child: Text(l.edit)),
-                PopupMenuItem(value: 'delete', child: Text(l.delete)),
-              ],
-            ),
-          ],
+                    }),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 'update', child: Text(l.update)),
+                      PopupMenuItem(value: 'edit', child: Text(l.edit)),
+                      PopupMenuItem(value: 'delete', child: Text(l.delete)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                app.executable,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                app.portableRoot == null
+                    ? l.externalApplication
+                    : l.managedApplication,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                runSpacing: 12,
+                spacing: 16,
+                children: [
+                  Text(
+                    l.profiles,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: busy ? null : () => perform(() => editProfile()),
+                    icon: const Icon(Icons.add_rounded),
+                    label: Text(l.newProfile),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(l.desktopIntegrationHelp),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(app.executable, maxLines: 2, overflow: TextOverflow.ellipsis),
-        Text(
-          app.portableRoot == null
-              ? l.externalApplication
-              : l.managedApplication,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 24),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: 12,
-          spacing: 16,
-          children: [
-            Text(l.profiles, style: Theme.of(context).textTheme.titleLarge),
-            OutlinedButton.icon(
-              onPressed: busy ? null : () => perform(() => editProfile()),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(l.newProfile),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(l.desktopIntegrationHelp),
-        const SizedBox(height: 16),
-        if (library.profiles.isEmpty)
-          Center(child: Text(l.emptyProfiles))
+        if (profiles.isEmpty)
+          SliverToBoxAdapter(child: Center(child: Text(l.emptyProfiles)))
         else
-          for (final profile in library.profiles) profileCard(profile, l),
+          SliverList.builder(
+            itemCount: profiles.length,
+            itemBuilder: (context, index) => KeyedSubtree(
+              key: ValueKey(profiles[index].id),
+              child: profileCard(profiles[index], l),
+            ),
+          ),
       ],
     );
   }
@@ -906,7 +932,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 listenable: library,
                 builder: (context, _) => LayoutBuilder(
                   builder: (context, constraints) {
-                    if (library.applications.isEmpty) {
+                    final applications = library.applications;
+                    if (applications.isEmpty) {
                       return Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 480),
@@ -939,7 +966,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(width: 250, child: applicationList(l)),
+                          SizedBox(
+                            width: 250,
+                            child: applicationList(applications),
+                          ),
                           const SizedBox(width: 32),
                           Expanded(child: profilePanel(l)),
                         ],
@@ -947,22 +977,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                     return Column(
                       children: [
-                        DropdownButtonFormField<String>(
-                          key: ValueKey(library.selected?.id),
-                          initialValue: library.selected?.id,
-                          decoration: InputDecoration(labelText: l.library),
-                          isExpanded: true,
-                          items: [
-                            for (final app in library.applications)
-                              DropdownMenuItem(
-                                value: app.id,
-                                child: Text(
-                                  app.name,
-                                  overflow: TextOverflow.ellipsis,
+                        InkWell(
+                          onTap: () => chooseApplication(applications),
+                          child: InputDecorator(
+                            decoration: InputDecoration(labelText: l.library),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    library.selected!.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                          ],
-                          onChanged: library.select,
+                                const Icon(Icons.arrow_drop_down_rounded),
+                              ],
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 24),
                         Expanded(child: profilePanel(l)),

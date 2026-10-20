@@ -66,9 +66,13 @@ class LibraryController extends ChangeNotifier {
         items.firstOrNull;
   }
 
-  List<Profile> get profiles => repository.profiles
-      .where((v) => v.applicationId == selected?.id)
-      .toList();
+  List<Profile> get profiles {
+    final applicationId = selected?.id;
+    return repository.profiles
+        .where((v) => v.applicationId == applicationId)
+        .toList();
+  }
+
   void select(String? id) {
     selectedId = id;
     notifyListeners();

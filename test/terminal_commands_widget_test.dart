@@ -151,7 +151,15 @@ void main() {
         (tester) async {
           final l = await open(tester, language, size);
           expect(
-            tester.widget<TextField>(find.byType(TextField)).controller!.text,
+            tester
+                .widget<TextField>(
+                  find.descendant(
+                    of: find.byType(Dialog),
+                    matching: find.byType(TextField),
+                  ),
+                )
+                .controller!
+                .text,
             'rpcs3',
           );
           await tap(
@@ -244,7 +252,13 @@ void main() {
         await tester.runAsync(() async {
           expect(await external.readAsString(), 'external');
         });
-        await tester.enterText(find.byType(TextField), '../bad');
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(Dialog),
+            matching: find.byType(TextField),
+          ),
+          '../bad',
+        );
         await tap(
           tester,
           find.widgetWithText(FilledButton, l.createTerminalCommand),
@@ -253,7 +267,13 @@ void main() {
           tester,
           () => find.text(l.terminalCommandInvalid).evaluate().length == 2,
         );
-        await tester.enterText(find.byType(TextField), 'rpcs3-work');
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(Dialog),
+            matching: find.byType(TextField),
+          ),
+          'rpcs3-work',
+        );
         await tap(
           tester,
           find.widgetWithText(FilledButton, l.createTerminalCommand),

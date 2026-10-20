@@ -213,7 +213,12 @@ void main() {
           await waitFor(tester, () => find.text(l.name).evaluate().isNotEmpty);
           expect(find.text('Studio-v1'), findsOneWidget);
           await tester.enterText(
-            find.byType(TextField).first,
+            find
+                .descendant(
+                  of: find.byType(Dialog),
+                  matching: find.byType(TextField),
+                )
+                .first,
             'Studio العربية',
           );
           await tester.tap(find.text(l.save));
@@ -250,14 +255,34 @@ void main() {
           await tester.tap(find.text(l.edit));
           await waitFor(
             tester,
-            () => find.byType(TextField).evaluate().isNotEmpty,
+            () => find
+                .descendant(
+                  of: find.byType(Dialog),
+                  matching: find.byType(TextField),
+                )
+                .evaluate()
+                .isNotEmpty,
           );
           await tester.enterText(
-            find.byType(TextField).first,
+            find
+                .descendant(
+                  of: find.byType(Dialog),
+                  matching: find.byType(TextField),
+                )
+                .first,
             'Renamed AppImage',
           );
           expect(
-            tester.widget<TextField>(find.byType(TextField).at(1)).readOnly,
+            tester
+                .widget<TextField>(
+                  find
+                      .descendant(
+                        of: find.byType(Dialog),
+                        matching: find.byType(TextField),
+                      )
+                      .at(1),
+                )
+                .readOnly,
             isTrue,
           );
           await tap(tester, find.text(l.chooseApplicationIcon));

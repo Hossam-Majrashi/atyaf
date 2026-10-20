@@ -14,6 +14,8 @@
   "system": "Follow system",
   "settings": "Settings",
   "library": "Applications",
+  "searchApplications": "Search applications",
+  "noMatchingApplications": "No matching applications.",
   "addApplication": "Add application",
   "executable": "Executable",
   "wmClass": "Window class (optional)",

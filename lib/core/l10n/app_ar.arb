@@ -14,6 +14,8 @@
   "system": "حسب النظام",
   "settings": "الإعدادات",
   "library": "البرامج",
+  "searchApplications": "بحث في البرامج",
+  "noMatchingApplications": "لا توجد برامج مطابقة.",
   "addApplication": "إضافة برنامج",
   "executable": "ملف تنفيذي",
   "wmClass": "فئة النافذة (اختياري)",

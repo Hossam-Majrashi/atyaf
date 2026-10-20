@@ -246,6 +246,14 @@ https://github.com/Hossam-Majrashi/atyaf/actions/runs/39482472542 completed all 
 
 Both local x86_64 packaging scripts also returned 0, and all seven local 1.2.2 files passed validation. `dist/SHA256SUMS` describes those local outputs; the previous checksum file was preserved as `dist/SHA256SUMS-before-1.2.2`. The exact final source passed all 238 tests serially again and clean analysis, source-contract, shell/actionlint and diff checks. A real x86_64 release smoke in disposable libraries confirmed visible first approval without execution and hidden approved launch with full streams/exit 0. There is no claim of ARM64 GUI or complete shadPS4 migration/game testing. Existing installed binaries remain unchanged; the user's existing shadPS4 profile was repaired only in its arguments, with a private local pre-change backup excluded from Git.
 
+## Large-library performance — 1.2.3
+
+The desktop sidebar and compact selector share a searchable lazy application list; profile cards use slivers. SQLite retains unchanged validated application/profile snapshots, detects external/local commits and bypasses retention across transactions. History uses a parameter-bound profile query and additive expression index. No reconciliation, output capture, approval or account storage behavior is disabled to improve responsiveness.
+
+Local analysis and the complete 250-test serial run pass, followed by a passing additional application-read-count regression (251 total). Six bilingual/three-size widget tests exercise 2000 applications and 2000 accounts, bounded mounted widgets, search/selection/empty states and last-account scrolling. Six SQLite regressions cover invalidation/immutability/rollback/icon validation/indexed history. Existing dialog tests now scope field finders to dialogs rather than the sidebar search field. No wall-clock/FPS guarantee or faster external-program startup is claimed.
+
+Both native and Flatpak x86_64 packaging returned 0; all seven `dist/atyaf-1.2.3-linux-x86_64.*` outputs and the regenerated checksums pass the existing full validator. The prior checksum manifest is preserved. Bundle: `build/linux/x64/release/bundle/atyaf` with its sibling lib/data. Installed executables and user libraries remain unchanged. ARM64 build and public release success require independent hosted verification.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building

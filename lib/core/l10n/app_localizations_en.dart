@@ -53,6 +53,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get library => 'Applications';
 
   @override
+  String get searchApplications => 'Search applications';
+
+  @override
+  String get noMatchingApplications => 'No matching applications.';
+
+  @override
   String get addApplication => 'Add application';
 
   @override

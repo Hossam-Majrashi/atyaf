@@ -17,6 +17,9 @@ class LinuxRepository implements LibraryRepository {
         'CREATE TABLE IF NOT EXISTS $table (id TEXT PRIMARY KEY, payload TEXT NOT NULL)',
       );
     }
+    db.execute(
+      "CREATE INDEX IF NOT EXISTS launches_profile ON launches(json_extract(payload, '\$.profileId'))",
+    );
   }
   static Database openDatabase(String path) {
     open.overrideFor(
@@ -29,6 +32,25 @@ class LinuxRepository implements LibraryRepository {
   final Database db;
   final String path;
   bool locked = false;
+  (int, int)? _libraryVersion;
+  List<Application>? _applications;
+  List<Profile>? _profiles;
+
+  void _checkLibraryVersion() {
+    // data_version observes other connections; total_changes observes this one,
+    // including direct database writes during restore. Never retain a snapshot
+    // across a transaction, which may subsequently roll back.
+    final version = (
+      db.select('PRAGMA data_version').single.values.single as int,
+      db.select('SELECT total_changes()').single.values.single as int,
+    );
+    if (!db.autocommit || version != _libraryVersion) {
+      _applications = null;
+      _profiles = null;
+      _libraryVersion = db.autocommit ? version : null;
+    }
+  }
+
   @override
   Future<T> withExclusiveLock<T>(Future<T> Function() operation) async {
     if (locked) {
@@ -60,10 +82,33 @@ class LinuxRepository implements LibraryRepository {
     [value['id'], jsonEncode(value)],
   );
   @override
-  List<Application> get applications =>
-      _all('applications').map(Application.fromJson).toList();
+  List<Application> get applications {
+    _checkLibraryVersion();
+    return _applications ??= List.unmodifiable(
+      _all('applications').map(Application.fromJson),
+    );
+  }
+
   @override
-  List<Profile> get profiles => _all('profiles').map(Profile.fromJson).toList();
+  List<Profile> get profiles {
+    _checkLibraryVersion();
+    return _profiles ??= List.unmodifiable(
+      _all('profiles').map((record) {
+        final profile = Profile.fromJson(record);
+        return Profile(
+          id: profile.id,
+          applicationId: profile.applicationId,
+          name: profile.name,
+          arguments: List.unmodifiable(profile.arguments),
+          environment: Map.unmodifiable(profile.environment),
+          workingDirectory: profile.workingDirectory,
+          paths: Map.unmodifiable(profile.paths),
+          trustedFingerprint: profile.trustedFingerprint,
+        );
+      }),
+    );
+  }
+
   @override
   void saveApplication(Application application) =>
       _save('applications', application.toJson());
@@ -81,12 +126,13 @@ class LinuxRepository implements LibraryRepository {
   }
 
   @override
-  List<Map<String, dynamic>> history(String profileId) =>
-      _all('launches')
-          .where((r) => r['profileId'] == profileId)
-          .toList()
-          .reversed
-          .toList();
+  List<Map<String, dynamic>> history(String profileId) => db
+      .select(
+        "SELECT payload FROM launches WHERE json_extract(payload, '\$.profileId')=? ORDER BY rowid DESC",
+        [profileId],
+      )
+      .map((row) => decodeRecord(row['payload'] as String))
+      .toList();
   @override
   void recordLaunch(Map<String, dynamic> record) => _save('launches', record);
   @override

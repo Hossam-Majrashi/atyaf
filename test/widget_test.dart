@@ -19,6 +19,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class ReadCountingRepository extends LinuxRepository {
+  ReadCountingRepository(super.path);
+  int applicationReads = 0;
+  @override
+  List<Application> get applications {
+    applicationReads++;
+    return super.applications;
+  }
+}
+
 class DirectoryPicker extends FilePicker {
   DirectoryPicker(this.path);
   final String path;
@@ -69,7 +79,7 @@ void main() {
     temporary = await Directory.systemTemp.createTemp('atyaf-widgets-');
     final runtime = LinuxRuntime(environment: {'HOME': temporary.path});
     await Directory(runtime.root).create(recursive: true);
-    repository = LinuxRepository('${runtime.root}/library.sqlite');
+    repository = ReadCountingRepository('${runtime.root}/library.sqlite');
     final processes = LinuxProcesses(runtime, repository);
     final archives = LinuxArchives(
       runtime,
@@ -93,6 +103,130 @@ void main() {
     repository.close();
     await temporary.delete(recursive: true);
   });
+
+  test(
+    'Profile filtering reads the application library once, not per account',
+    () {
+      repository.saveApplication(
+        const Application(
+          id: 'app',
+          name: 'Studio',
+          executable: '/usr/bin/true',
+        ),
+      );
+      repository.db.execute('BEGIN IMMEDIATE');
+      for (var i = 0; i < 2000; i++) {
+        repository.saveProfile(
+          Profile(
+            id: 'p-$i',
+            applicationId: i.isEven ? 'app' : 'other',
+            name: 'Account $i',
+          ),
+        );
+      }
+      repository.db.execute('COMMIT');
+      final counted = repository as ReadCountingRepository;
+      counted.applicationReads = 0;
+      expect(library.profiles.length, 1000);
+      expect(counted.applicationReads, 1);
+    },
+  );
+
+  for (final language in ['en', 'ar']) {
+    for (final size in [
+      const Size(800, 600),
+      const Size(1100, 760),
+      const Size(1600, 900),
+    ]) {
+      testWidgets('Large library $language $size searches and builds lazily', (
+        tester,
+      ) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        SharedPreferences.setMockInitialValues({
+          'onboarding_done': true,
+          'language': language,
+        });
+        repository.db.execute('BEGIN IMMEDIATE');
+        for (var i = 0; i < 2000; i++) {
+          repository.saveApplication(
+            Application(
+              id: 'app-$i',
+              name: 'برنامج Studio $i',
+              executable: '/usr/bin/true',
+            ),
+          );
+          repository.saveProfile(
+            Profile(
+              id: 'profile-$i',
+              applicationId: 'app-0',
+              name: 'Account $i',
+            ),
+          );
+        }
+        repository.db.execute('COMMIT');
+        await tester.pumpWidget(
+          AtyafApp(
+            preferences: PreferencesService(
+              await SharedPreferences.getInstance(),
+            ),
+            library: library,
+            manageWindow: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+        final compact = size.width == 800;
+        if (compact) {
+          await tester.tap(find.byType(InputDecorator).first);
+          await tester.pumpAndSettle();
+        }
+        final l = await AppLocalizations.delegate.load(Locale(language));
+        final search = find.widgetWithText(TextField, l.searchApplications);
+        expect(find.byType(ListTile).evaluate().length, lessThan(40));
+        await tester.enterText(search, 'STUDIO 1999');
+        await tester.pumpAndSettle();
+        expect(
+          find.widgetWithText(ListTile, 'برنامج Studio 1999'),
+          findsOneWidget,
+        );
+        await tester.tap(find.widgetWithText(ListTile, 'برنامج Studio 1999'));
+        await tester.pumpAndSettle();
+        expect(library.selected?.id, 'app-1999');
+        if (compact) {
+          await tester.tap(find.byType(InputDecorator).first);
+          await tester.pumpAndSettle();
+        }
+        await tester.enterText(search, 'missing application');
+        await tester.pumpAndSettle();
+        expect(find.text(l.noMatchingApplications), findsOneWidget);
+        await tester.enterText(search, 'برنامج Studio 0');
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(ListTile, 'برنامج Studio 0'));
+        await tester.pumpAndSettle();
+        expect(library.selected?.id, 'app-0');
+        expect(find.byType(Card).evaluate().length, lessThan(15));
+        final scrollable = find.descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        );
+        final state = tester.state<ScrollableState>(scrollable);
+        // Jump far down, then let lazy layout refine its extent estimate.
+        state.position.jumpTo(1000000);
+        await tester.pumpAndSettle();
+        for (var i = 0; i < 5; i++) {
+          state.position.jumpTo(state.position.maxScrollExtent);
+          await tester.pumpAndSettle();
+        }
+        expect(find.text('Account 1999'), findsOneWidget);
+        expect(find.byType(Card).evaluate().length, lessThan(15));
+        await tester.pump(const Duration(seconds: 2));
+        expect(find.text('Account 1999'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  }
 
   for (final cancel in [false, true]) {
     testWidgets(
@@ -580,7 +714,7 @@ void main() {
   for (final language in ['en', 'ar']) {
     for (final size in [const Size(1100, 760), const Size(1600, 900)]) {
       testWidgets(
-        'Saved icons $language $size retain providers and frames across real timer refreshes and SQLite reloads',
+        'Saved icons $language $size retain providers and frames across real timer refreshes and cache invalidation',
         (tester) async {
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1;
@@ -688,7 +822,7 @@ void main() {
                 repository.applications.first,
                 repository.applications.first,
               ),
-              isFalse,
+              isTrue,
             );
             for (var tick = 0; tick < 6; tick++) {
               final previousTick = library.timer.tick;
@@ -794,7 +928,11 @@ void main() {
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
-        await tester.enterText(find.byType(TextField).first, 'حساب العمل');
+        final dialogFields = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byType(TextField),
+        );
+        await tester.enterText(dialogFields.first, 'حساب العمل');
         Future<void> saveAndWait() async {
           await tester.tap(find.text(language == 'en' ? 'Save' : 'حفظ'));
           for (var attempt = 0; attempt < 150; attempt++) {
@@ -802,7 +940,7 @@ void main() {
               () => Future<void>.delayed(const Duration(milliseconds: 20)),
             );
             await tester.pump(const Duration(milliseconds: 50));
-            if (find.byType(TextField).evaluate().isEmpty) {
+            if (dialogFields.evaluate().isEmpty) {
               await tester.pumpAndSettle();
               return;
             }
@@ -823,7 +961,7 @@ void main() {
         await tester.tap(find.text(language == 'en' ? 'Edit' : 'تعديل'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
-        await tester.enterText(find.byType(TextField).first, 'حساب شخصي');
+        await tester.enterText(dialogFields.first, 'حساب شخصي');
         await saveAndWait();
         expect(repository.profiles.single.id, profile.id);
         await tester.runAsync(() async {

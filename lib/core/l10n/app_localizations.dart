@@ -132,6 +132,18 @@ abstract class AppLocalizations {
   /// **'Applications'**
   String get library;
 
+  /// No description provided for @searchApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'Search applications'**
+  String get searchApplications;
+
+  /// No description provided for @noMatchingApplications.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching applications.'**
+  String get noMatchingApplications;
+
   /// No description provided for @addApplication.
   ///
   /// In en, this message translates to:

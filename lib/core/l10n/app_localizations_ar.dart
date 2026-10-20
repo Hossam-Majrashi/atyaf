@@ -53,6 +53,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get library => 'البرامج';
 
   @override
+  String get searchApplications => 'بحث في البرامج';
+
+  @override
+  String get noMatchingApplications => 'لا توجد برامج مطابقة.';
+
+  @override
   String get addApplication => 'إضافة برنامج';
 
   @override
