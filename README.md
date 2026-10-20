@@ -42,6 +42,7 @@
 
 - **حسابات مستقلة:** مسارات منفصلة للإعدادات والبيانات والتخزين المؤقت والحالة والملفات المؤقتة، مع تخصيص وسائط التشغيل ومتغيرات البيئة ومجلد العمل.
 - **مكتبة برامج محلية:** إضافة ملف تنفيذي مثبت، أو استيراد مجلد برنامج كامل أو أرشيف محمول بصيغة `.tar.gz` أو `.tar.xz` أو `.tar.zst` أو ملف `.AppImage`.
+- **بحث وتصفّح المكتبات الكبيرة:** ابحث عن اسم البرنامج مباشرةً من اللوحة الجانبية أو نافذة الاختيار في الأحجام الصغيرة. تُبنى عناصر البرامج والحسابات حسب الجزء الظاهر، مع تقليل قراءات قاعدة البيانات المتكررة.
 - **اختيار أيقونة من صور المشروع:** بعد اختيار الملف التنفيذي، تصفح صور المشروع ومجلداته الفرعية واختر أيقونة البرنامج، أو استخدم الاكتشاف التلقائي. يمكن تغييرها لاحقًا من «تعديل ← اختر أيقونة البرنامج». تُحفظ نسخة مستقلة مع المكتبة وتُحدّث أيقونات اختصارات الحسابات الموجودة عند الحفظ.
 - **تحديث يدوي دون فقد الحسابات:** استبدال ملفات البرنامج من مجلد أو أرشيف أو AppImage جديد مع الحفاظ على الاسم والأيقونة المختارة وبيانات الحسابات وإعداداتها، والتراجع عن الاستبدال عند فشل العملية. لا توجد تحديثات شبكية أو تلقائية.
 - **اختصارات بأسماء الحسابات:** حفظ الحساب ينشئ اختصارًا باسمه في قائمة التطبيقات، بأيقونة البرنامج الأصلية عند اكتشافها، أو أيقونة أطياف كبديل. يمكن تحديث اختصارات الحسابات السابقة من زر «إضافة إلى قائمة تطبيقات الجهاز».
@@ -115,7 +116,7 @@ flutter build linux --release --target-platform linux-x64
 
 </div>
 
-تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.2-linux-x86_64.AppImage` و`atyaf-1.2.2-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
+تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.3-linux-x86_64.AppImage` و`atyaf-1.2.3-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
 
 تجد التنزيلات المنشورة في [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). يستخدم مسار [Linux release](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) مشغّلات أصلية منفصلة للمعماريتين، ويختبر المشروع ويفحص ELF وبيانات الحزم وzsync وFlatpak قبل نشر 14 ملفًا و`SHA256SUMS`. لا يُنشر الإصدار إلا بعد نجاح المعماريتين؛ لا يُفترض توفر حزمة لمجرد وجود إعداد بنائها. تفاصيل التشغيل والتحقق في [ملاحظات البناء](BUILD_NOTES.md).
 
@@ -168,6 +169,7 @@ The screenshots are displayed in the Arabic section above:
 
 - **Independent profiles:** Separate config, data, cache, state and temporary paths, with configurable arguments, environment variables and working directory.
 - **Local application library:** Reference an installed executable, or import a complete application folder, a portable `.tar.gz`, `.tar.xz` or `.tar.zst` archive, or an `.AppImage` file.
+- **Search and large libraries:** Find application names directly in the sidebar or compact-window selector. Application/profile rows are built on demand, with fewer repeated database reads.
 - **Choose an icon from project images:** After selecting an executable, browse images throughout the project and its subfolders, or keep automatic discovery. Change it later through **Edit → Choose an application icon**. A separate copy is saved with the library, and existing account shortcut icons are refreshed on save.
 - **Manual updates without losing profiles:** Replace application files from a new folder, archive or AppImage while preserving the name, chosen icon, profile data and settings, with rollback on failed replacement. No remote or automatic update checks.
 - **Account-named shortcuts:** Saving a profile adds a system applications-menu shortcut with its own name and the original application's icon when discoverable, falling back to Atyaf's icon. Existing shortcuts can be refreshed using **Add to applications menu**.
@@ -229,7 +231,7 @@ To generate DEB, RPM, Arch, general archive and AppImage packages, or a Flatpak 
 ./flatpak_linux.sh x64
 ```
 
-Packages are written to `dist/`, for example `atyaf-1.2.2-linux-x86_64.AppImage` and `atyaf-1.2.2-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
+Packages are written to `dist/`, for example `atyaf-1.2.3-linux-x86_64.AppImage` and `atyaf-1.2.3-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
 
 Published downloads are under [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). The [Linux release workflow](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) uses separate architecture-native runners, runs analysis/tests, and inspects ELF headers, package metadata, zsync and Flatpak before publishing 14 assets plus `SHA256SUMS`. Both architectures must pass before publication; a build configuration alone does not imply an available download. See [build notes](BUILD_NOTES.md) for operation and verification details.
 
