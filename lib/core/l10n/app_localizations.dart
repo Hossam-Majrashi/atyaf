@@ -312,6 +312,24 @@ abstract class AppLocalizations {
   /// **'The integer warning comes from xdg-open’s old KDE fallback. Updated Atyaf preserves the host KDE session version. Restart the profile with the updated build to regenerate its desktop handler.'**
   String get desktopHandlerAdvice;
 
+  /// No description provided for @shadps4CliAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'This is shadPS4 CLI usage output, not a system crash report. Versions with Big Picture mode need --big-picture (or -b) to open their interface; launching without arguments can exit with code 255. In the profile editor, use the shadPS4 Big Picture option, then Save and restart. Alternatively, import the separate shadPS4 Qt Launcher for the desktop GUI, or supply a game using --game. Flags depend on the imported version; Atyaf does not add them automatically.'**
+  String get shadps4CliAdvice;
+
+  /// No description provided for @useShadps4BigPicture.
+  ///
+  /// In en, this message translates to:
+  /// **'shadPS4: use Big Picture'**
+  String get useShadps4BigPicture;
+
+  /// No description provided for @shadps4BigPictureConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Add --big-picture to this profile’s arguments? Use only with a shadPS4 CLI version that lists this option in its help. This opens Big Picture mode, not the separate Qt Launcher. Other arguments and profile data are kept; no data migration or automatic launch occurs. Save and restart the profile to apply.'**
+  String get shadps4BigPictureConfirm;
+
   /// No description provided for @useSecretService.
   ///
   /// In en, this message translates to:

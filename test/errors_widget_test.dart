@@ -161,7 +161,7 @@ void main() {
 
   for (final language in ['en', 'ar']) {
     testWidgets(
-      'Logs $language explain TLS, wallet, desktop handler and lost exit status',
+      'Logs $language explain shadPS4 stdout, TLS, wallet, desktop handler and lost exit status',
       (tester) async {
         final l = lookupAppLocalizations(Locale(language));
         repository.updateLaunch('failed', {
@@ -173,6 +173,12 @@ void main() {
           () => File('${library.runtime.profileRoot('profile')}/logs/stderr')
               .writeAsString(
                 'net_error -202\nError contacting kwalletd6\n/usr/bin/xdg-open: test: : integer expected',
+              ),
+        );
+        await tester.runAsync(
+          () => File('${library.runtime.profileRoot('profile')}/logs/stdout')
+              .writeAsString(
+                'shadPS4 Emulator CLI\nUsage: [OPTIONS] [guest_arg]\n-b, --big-picture Start in Big Picture Mode',
               ),
         );
         await tester.pumpWidget(
@@ -191,7 +197,9 @@ void main() {
         await tester.pumpAndSettle();
         for (
           var attempt = 0;
-          attempt < 100 && find.text(l.certificateAdvice).evaluate().isEmpty;
+          attempt < 100 &&
+              (find.text(l.certificateAdvice).evaluate().isEmpty ||
+                  find.text(l.shadps4CliAdvice).evaluate().isEmpty);
           attempt++
         ) {
           await tester.runAsync(
@@ -201,6 +209,7 @@ void main() {
         }
         for (final advice in [
           l.lostExitAdvice,
+          l.shadps4CliAdvice,
           l.certificateAdvice,
           l.walletAdvice,
           l.desktopHandlerAdvice,

@@ -136,6 +136,42 @@ class _ProfileEditorState extends State<ProfileEditor> {
     }
   }
 
+  Future<void> useShadps4BigPicture() async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.useShadps4BigPicture),
+        content: SingleChildScrollView(child: Text(l.shadps4BigPictureConfirm)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.next),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final args = List<String>.from(jsonDecode(arguments.text) as List);
+      final separator = args.indexOf('--');
+      final options = separator < 0 ? args : args.sublist(0, separator);
+      final positional = separator < 0 ? <String>[] : args.sublist(separator);
+      arguments.text = jsonEncode([
+        ...options.where((arg) => arg != '-b' && arg != '--big-picture'),
+        '--big-picture',
+        ...positional,
+      ]);
+      setState(() => error = null);
+    } catch (_) {
+      setState(() => error = l.invalidInput);
+    }
+  }
+
   Future<void> useX11WindowControls() async {
     if (!widget.hasX11Display) return;
     final l = AppLocalizations.of(context);
@@ -215,6 +251,15 @@ class _ProfileEditorState extends State<ProfileEditor> {
             onPressed: useSecretService,
             icon: const Icon(Icons.lock_outline_rounded),
             label: Text(l.useSecretService),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: OutlinedButton.icon(
+            onPressed: useShadps4BigPicture,
+            icon: const Icon(Icons.sports_esports_outlined),
+            label: Text(l.useShadps4BigPicture),
           ),
         ),
         const SizedBox(height: 18),

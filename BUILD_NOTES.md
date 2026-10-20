@@ -234,6 +234,12 @@ All public downloads were retrieved without authentication headers into dist/git
 
 Git used its existing local credential provider and token-free origin URL; the local API helper reads credentials only in memory, and public downloads never carry Authorization headers. No personal token was written to project source, workflow, release assets or helper scripts. CI publication used its temporary repository token. The user should revoke the exposed personal credential after publication. Source is pushed to main; binaries remain release assets rather than Git history.
 
+## shadPS4 CLI startup — 1.2.2
+
+The desktop profile editor has an explicit, confirmed `--big-picture` helper for compatible shadPS4 CLI builds. Startup advice now recognizes CLI help in stdout as well as stderr; it does not alter complete logs, guess executable-specific defaults, download a launcher or migrate emulator data. The reported empty-argument profile was repaired with a private backup and guarded update of that field only. Upstream https://github.com/shadps4-emu/shadPS4/blob/main/src/main.cpp documents the no-arguments return -1/help branch and Big Picture mode; Linux exposes that return as 255.
+
+All 238 serial Flutter tests, analysis and source-contract/diff checks pass. Added tests exercise both languages/all three editor sizes, confirmation/cancellation, invalid JSON, idempotence, guest delimiters, unchanged settings and real Linux argument-list/XDG/full-log behavior. Existing bilingual log widget checks now cover stdout advice, and full reports preserve output beyond the preview limit. The native x86_64 release executable compiled. A real disposable-configuration shadPS4 startup with `--big-picture` reached its visible Save Migration prompt instead of CLI usage; no migration choice was made and no game or full UI flow is claimed. Native/Flatpak release packaging and hosted publication require their separate artifact checks. Installed Atyaf binaries remain unchanged.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building

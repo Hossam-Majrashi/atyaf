@@ -160,6 +160,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'The integer warning comes from xdg-open’s old KDE fallback. Updated Atyaf preserves the host KDE session version. Restart the profile with the updated build to regenerate its desktop handler.';
 
   @override
+  String get shadps4CliAdvice =>
+      'This is shadPS4 CLI usage output, not a system crash report. Versions with Big Picture mode need --big-picture (or -b) to open their interface; launching without arguments can exit with code 255. In the profile editor, use the shadPS4 Big Picture option, then Save and restart. Alternatively, import the separate shadPS4 Qt Launcher for the desktop GUI, or supply a game using --game. Flags depend on the imported version; Atyaf does not add them automatically.';
+
+  @override
+  String get useShadps4BigPicture => 'shadPS4: use Big Picture';
+
+  @override
+  String get shadps4BigPictureConfirm =>
+      'Add --big-picture to this profile’s arguments? Use only with a shadPS4 CLI version that lists this option in its help. This opens Big Picture mode, not the separate Qt Launcher. Other arguments and profile data are kept; no data migration or automatic launch occurs. Save and restart the profile to apply.';
+
+  @override
   String get useSecretService => 'Electron/Chromium: use Secret Service';
 
   @override

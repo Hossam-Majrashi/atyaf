@@ -384,6 +384,79 @@ void main() {
     }
   });
 
+  test('shadPS4 CLI advice reads stdout and preserves complete original reports', () async {
+    const profile = Profile(id: 'shad', applicationId: 'app', name: 'Shadps4');
+    repository.saveProfile(profile);
+    const usage =
+        'shadPS4 Emulator CLI\nUsage: [OPTIONS] [guest_arg]\n-b, --big-picture Start in Big Picture Mode\n';
+    final out = File('${runtime.profileRoot(profile.id)}/logs/out');
+    await out.parent.create(recursive: true);
+    final original = '$usage${'x' * (300 * 1024)}\ncomplete ending';
+    await out.writeAsString(original);
+    final record = <String, dynamic>{
+      'pid': 123,
+      'start': '2026-10-20T21:47:49',
+      'stop': '2026-10-20T21:47:56',
+      'exitCode': 255,
+      'stdout': out.path,
+    };
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      final report = await library.logs.completeReport(
+        await launchReport(l, library, profile, record),
+      );
+      expect(report, contains(l.shadps4CliAdvice));
+      expect(report, contains(original));
+      expect(logAdvice(l, usage), [l.shadps4CliAdvice]);
+      expect(logAdvice(l, 'shadPS4 Emulator CLI\nnormal startup'), isEmpty);
+      expect(logAdvice(l, 'Usage: unrelated --big-picture'), isEmpty);
+      expect(logAdvice(l, 'shadPS4 Emulator CLI\nUsage: old version'), isEmpty);
+    }
+    expect(await out.readAsString(), original);
+  });
+
+  test('Linux launches explicit shadPS4 args unchanged, with isolated data and full logs', () async {
+    final executable = File('${temporary.path}/cli fixture');
+    await executable.writeAsString(
+      '#!/usr/bin/python3\nimport sys,os,json\n'
+      'print(json.dumps(sys.argv[1:], ensure_ascii=False))\n'
+      'print(os.environ["XDG_DATA_HOME"])\n'
+      'print("complete stderr", file=sys.stderr)\n',
+    );
+    await Process.run('/usr/bin/chmod', ['700', executable.path]);
+    final app = Application(
+      id: 'shad',
+      name: 'CLI fixture',
+      executable: executable.path,
+    );
+    final review = await runtime.inspect(app.executable);
+    final profile = Profile(
+      id: 'shad',
+      applicationId: app.id,
+      name: 'Shadps4',
+      arguments: const ['--big-picture', '--game', '/games/لعبة with spaces'],
+      trustedFingerprint: review.fingerprint,
+    );
+    repository.saveApplication(app);
+    repository.saveProfile(profile);
+    await library.processes.launch(app, profile);
+    await library.processes.waitForPendingExits();
+    final record = repository.history(profile.id).single;
+    expect(record['exitCode'], 0);
+    final output = (await library.logs.read(
+      record['stdout'] as String,
+      profile.id,
+    )).split('\n');
+    expect(jsonDecode(output[0]), profile.arguments);
+    expect(output[1], runtime.resolvedPaths(profile)['data']);
+    expect(
+      await library.logs.read(record['stderr'] as String, profile.id),
+      'complete stderr\n',
+    );
+    expect(repository.profiles.single.arguments, profile.arguments);
+    expect(runtime.host['XDG_DATA_HOME'], '${temporary.path}/system-data');
+    await runtime.cleanupTemporary(profile.id);
+  });
+
   test(
     'Menu entry has only account name and original installed application icon',
     () async {

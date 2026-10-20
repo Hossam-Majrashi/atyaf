@@ -30,6 +30,10 @@ Map<String, dynamic> crashRecord(
 }
 
 List<String> logAdvice(AppLocalizations l, String stderr) => [
+  if (stderr.contains('shadPS4 Emulator CLI') &&
+      stderr.contains('Usage:') &&
+      stderr.contains('--big-picture'))
+    l.shadps4CliAdvice,
   if (RegExp(r'net_error\s*[=:]?\s*-202\b').hasMatch(stderr))
     l.certificateAdvice,
   if (RegExp(
@@ -55,11 +59,12 @@ Future<List<ReportSection>> launchReport(
   );
   final advice = [
     if (record['interrupted'] == true) l.lostExitAdvice,
-    if (record['stderr'] is String)
-      ...logAdvice(
-        l,
-        await library.logs.read(record['stderr'] as String, profile.id),
-      ),
+    for (final channel in ['stdout', 'stderr'])
+      if (record[channel] is String)
+        ...logAdvice(
+          l,
+          await library.logs.read(record[channel] as String, profile.id),
+        ),
   ];
   return [
     ReportSection(

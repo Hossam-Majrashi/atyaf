@@ -1,24 +1,24 @@
-# Atyaf 1.2.1 — أطياف
+# Atyaf 1.2.2 — أطياف
 
 ## العربية
 
-- إصلاح النقر على اختصار حساب يعمل مسبقًا على KDE: إظهار نافذته بدل انتهاء الاختصار بصمت، دون تشغيل نسخة ثانية. يشمل استدعاء نافذة Epic المخفية في صينية النظام عبر خدمة نسخته الموجودة.
-- ربط نافذة البرنامج باختصاره باستخدام فئة النافذة الفعلية من KWin، بما فيها برامج AppImage مثل RPCS3، دون تخمين الاسم أو إنشاء قواعد نوافذ دائمة.
-- إضافة `StartupNotify=false` لإزالة انتظار التشغيل الوهمي من الاختصارات التي يشرف عليها أطياف مخفيًا، والاحتفاظ بفئة النافذة المكتشفة عند تحديث الأيقونة.
-- تبقى الموافقة الأولى وفحص تغيّر الملف التنفيذي ومنع النسخ المكررة وإعدادات الحساب والسجلات الكاملة كما هي.
+- تشخيص شاشة استخدام shadPS4 CLI في المخرجات القياسية، وليس الأخطاء فقط. التشغيل بلا وسائط في النسخة المبلّغ عنها يُرجع `255` ولا يعني انهيارًا للنظام.
+- إضافة خيار مؤكد «shadPS4: استخدام Big Picture» في محرر الحساب لإضافة `--big-picture`، مع الحفاظ على الوسائط الأخرى وإعدادات الحساب. لا يُطبّق إلا بعد الحفظ وإعادة التشغيل؛ لا تُضاف وسائط إلى البرامج تلقائيًا.
+- توضيح الفرق بين وضع Big Picture وواجهة shadPS4 Qt Launcher المنفصلة، وإمكانية تحديد لعبة باستخدام `--game`.
+- الاحتفاظ بالمخرجات الأصلية كاملةً عند نسخ التقارير وتصديرها، وبالموافقة على التنفيذ ومنع النسخ المكررة وتكامل اختصارات KDE.
 
-**الحدود:** إظهار النوافذ والتعرّف التلقائي يتطلبان KDE مع `gdbus` وواجهات KWin المتاحة. يجري التعرّف خلال أول 30 ثانية؛ يمكن ضبط StartupWMClass يدويًا من محرر التطبيق على أسطح المكتب الأخرى أو عند تعذّر التعرّف. قد تتشارك الحسابات ذات فئة النافذة نفسها مجموعة واحدة. لا يضاف تجاوز أمني أو اعتماد إلزامي جديد.
+**الحدود:** يجب أن تعرض نسخة shadPS4 المستوردة خيار `--big-picture` في المساعدة. قد يعرض المحاكي حوار الإعداد أو نقل الحفظ عند أول تشغيل؛ لا يختار أطياف نقل البيانات نيابةً عنك. هذا ليس تضمينًا للمحاكي أو تنزيلًا تلقائيًا له، ولا ضمانًا لتوافق الألعاب.
 
 **متطلبات التشغيل:** GTK3 وSQLite وPython 3 وأدوات XDG وبوابة اختيار الملفات. Flatpak يستخدم GNOME 50. قراءة أيقونات AppImage اختيارية عبر 7-Zip؛ DwarFS غير مدعوم لقارئ الأيقونات، وليس ممنوعًا من التشغيل.
 
 ## English
 
-- Fix reopening a running profile shortcut on KDE: present its window instead of silently exiting, without launching a duplicate. Includes requesting Epic's tray-hidden window through its existing single-instance service.
-- Associate program windows with their shortcuts using the actual KWin window class, including AppImage programs such as RPCS3, without guessing names or installing permanent window rules.
-- Set `StartupNotify=false` for hidden-supervisor shortcuts to avoid misleading startup spinners, and retain learned window classes when refreshing icons.
-- First-launch approval, changed-executable checks, duplicate prevention, profile settings and complete logging remain intact.
+- Diagnose shadPS4 CLI usage in stdout as well as stderr. The reported version exits with `255` when started without arguments; this is not evidence of a system crash.
+- Add an explicitly confirmed **shadPS4: use Big Picture** profile-editor option for `--big-picture`, preserving unrelated arguments and settings. Save and restart are required; no application flags are injected automatically.
+- Explain Big Picture versus the separate shadPS4 Qt Launcher desktop GUI, and the alternative of specifying a game with `--game`.
+- Preserve complete original report output, executable approval, duplicate prevention and KDE shortcut integration.
 
-**Limitations:** automatic activation/matching requires KDE with available `gdbus` and KWin interfaces. Discovery runs during the first 30 seconds; use the application's StartupWMClass editor on other desktops or when discovery is unavailable. Profiles sharing a window class may share a taskbar group. No security bypass or mandatory new dependency is introduced.
+**Limitations:** the imported shadPS4 version must advertise `--big-picture`. First launch may display emulator setup/save-migration prompts; Atyaf never chooses data migration for you. This does not bundle/download the emulator or guarantee game compatibility.
 
 **Runtime requirements:** GTK3, SQLite, Python 3, XDG tools and a working file-chooser portal. Flatpak uses GNOME 50. Optional AppImage icon reading uses host 7-Zip; DwarFS is unsupported by the icon reader, not prohibited from launching.
 

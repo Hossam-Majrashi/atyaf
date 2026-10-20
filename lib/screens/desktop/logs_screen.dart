@@ -252,7 +252,7 @@ class _LogOutputState extends State<_LogOutput> {
             builder: (context, snapshot) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (widget.title == l.stderrLabel && snapshot.hasData)
+                if (snapshot.hasData)
                   for (final advice in logAdvice(l, snapshot.data!))
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),

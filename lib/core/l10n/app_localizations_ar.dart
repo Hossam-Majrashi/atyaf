@@ -160,6 +160,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'يأتي تحذير الأعداد من مسار KDE القديم في xdg-open. يحافظ أطياف المحدّث على إصدار جلسة KDE للجهاز. أعد تشغيل الحساب بالنسخة المحدّثة لتجديد معالج الروابط.';
 
   @override
+  String get shadps4CliAdvice =>
+      'هذه شاشة استخدام نسخة shadPS4 CLI، وليست تقرير انهيار للنظام. النسخ التي تدعم Big Picture تحتاج --big-picture أو -b لفتح واجهتها؛ وقد تنتهي برمز 255 عند تشغيلها بلا وسائط. من محرر الحساب اختر خيار shadPS4 Big Picture ثم احفظ وأعد التشغيل. ويمكن بدلًا من ذلك استيراد shadPS4 Qt Launcher المنفصل للواجهة المكتبية، أو تحديد لعبة باستخدام --game. تعتمد الوسائط على النسخة المستوردة؛ لا يضيفها أطياف تلقائيًا.';
+
+  @override
+  String get useShadps4BigPicture => 'shadPS4: استخدام Big Picture';
+
+  @override
+  String get shadps4BigPictureConfirm =>
+      'إضافة --big-picture إلى وسائط هذا الحساب؟ استخدمه فقط مع نسخة shadPS4 CLI التي تعرض هذا الخيار في المساعدة. يفتح وضع Big Picture وليس Qt Launcher المنفصل. تبقى الوسائط الأخرى وبيانات الحساب كما هي؛ لا تُنقل البيانات ولا يبدأ التشغيل تلقائيًا. احفظ الحساب وأعد تشغيله للتطبيق.';
+
+  @override
   String get useSecretService => 'Electron/Chromium: استخدام Secret Service';
 
   @override
