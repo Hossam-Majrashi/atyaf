@@ -657,6 +657,16 @@ print(json.dumps([sys.argv[1:],os.environ.get('KDE_SESSION_VERSION'),os.environ.
   test(
     'Real host xdg-open uses host default HTTPS browser, not profile defaults',
     () async {
+      // xdg-utils 1.1.3 splits whitespace in its public MIME directory lookup.
+      // Use ordinary host defaults for this upstream integration check; the
+      // isolated profile and browser executable still have Unicode/space paths.
+      // Exact arbitrary host paths are tested by the direct-wrapper test.
+      final hostDefaults = await Directory.systemTemp.createTemp(
+        'atyaf-browser-defaults-',
+      );
+      addTearDown(() => hostDefaults.delete(recursive: true));
+      runtime.host['XDG_CONFIG_HOME'] = '${hostDefaults.path}/config';
+      runtime.host['XDG_DATA_HOME'] = '${hostDefaults.path}/data';
       final browser = File('${temporary.path}/atyaf-test-browser');
       await browser.writeAsString('''#!/usr/bin/python3
 import json,os,sys
@@ -664,7 +674,7 @@ print(json.dumps([sys.argv[1:],os.environ['XDG_CONFIG_HOME']]))
 ''');
       await Process.run('chmod', ['700', browser.path]);
       final desktop = File(
-        '${runtime.dataHome}/applications/test-browser.desktop',
+        '${hostDefaults.path}/data/applications/test-browser.desktop',
       );
       await desktop.parent.create(recursive: true);
       await desktop.writeAsString(

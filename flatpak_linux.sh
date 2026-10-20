@@ -8,7 +8,7 @@ case "${1:-$(uname -m)}" in
   *) fail 'Flutter Linux supports x86_64 and aarch64; armv7/i686 32-bit builds are unsupported' ;;
 esac
 [[ "$(uname -m)" == "$arch" ]] || fail "Native $arch Linux host required; see BUILD_NOTES.md"
-for tool in flutter flatpak flatpak-builder python3 desktop-file-validate appstreamcli strip readlink uname mkdir; do
+for tool in flutter flatpak flatpak-builder python3 desktop-file-validate appstreamcli strip eu-strip readlink uname mkdir; do
   command -v "$tool" >/dev/null || fail "Required tool missing: $tool"
 done
 version="$(python3 -c "import re; print(re.search(r'^version:\\s*([^+\\s]+)',open('pubspec.yaml').read(),re.M).group(1))")"
