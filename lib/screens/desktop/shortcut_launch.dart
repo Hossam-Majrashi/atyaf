@@ -1,4 +1,5 @@
 import '../../features/home/services/library_controller.dart';
+import '../../features/process_manager/services/profile_window_service.dart';
 import '../../shared/services/process_service.dart';
 
 /// Approved desktop shortcuts need no library window. Keep the supervisor alive
@@ -10,7 +11,15 @@ Future<bool> launchDesktopShortcut(
   final profile = library.repository.profiles.firstWhere(
     (profile) => profile.id == profileId,
   );
+  Future<void> activateExisting() async {
+    final processes = library.processes;
+    if (processes is ProfileWindowService) {
+      await (processes as ProfileWindowService).activateWindow(profile.id);
+    }
+  }
+
   if (library.processes.isRunning(profile.id)) {
+    await activateExisting();
     return true;
   }
   final application = library.repository.applications.firstWhere(
@@ -23,6 +32,7 @@ Future<bool> launchDesktopShortcut(
     await library.launcher.launch(profile, application);
   } on ProfileAlreadyRunning {
     // Another supervisor won the launch race under the library lock.
+    await activateExisting();
     return true;
   } on OutputStreamsPending {
     // A local supervisor still owns output from the previous launch.

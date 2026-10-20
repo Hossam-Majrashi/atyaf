@@ -10,10 +10,13 @@ import '../../shared/models/library_models.dart';
 import '../../shared/services/library_repository.dart';
 import '../../shared/services/runtime_service.dart';
 import 'linux_commands.dart';
+import 'linux_profile_windows.dart';
+import '../../features/process_manager/services/profile_window_service.dart';
 
-class LinuxProcesses implements ProcessService {
-  LinuxProcesses(this.runtime, this.repository)
+class LinuxProcesses implements ProcessService, ProfileWindowService {
+  LinuxProcesses(this.runtime, this.repository, {this.windows})
     : journal = ProcessJournal(repository);
+  final LinuxProfileWindows? windows;
   final ProcessJournal journal;
   final RuntimeService runtime;
   final LibraryRepository repository;
@@ -71,6 +74,18 @@ class LinuxProcesses implements ProcessService {
       }
     }
     return null;
+  }
+
+  @override
+  Future<void> activateWindow(String profileId) async {
+    final record = active(profileId);
+    if (record == null) return;
+    await windows?.update(
+      profileId,
+      record['pid'] as int,
+      record['identity'] as String,
+      activate: true,
+    );
   }
 
   @override
@@ -193,8 +208,14 @@ class LinuxProcesses implements ProcessService {
         stderrPath: errPath,
         executable: review.path,
       );
+      final windowBinding = windows?.update(
+        profile.id,
+        state?['pid'] as int? ?? process.pid,
+        state?['identity'] as String? ?? identity(process.pid) ?? '',
+        activate: false,
+      );
       final completion = process.exitCode.then((code) async {
-        await Future.wait(streams);
+        await Future.wait([...streams, ?windowBinding]);
         journal.finish(
           id,
           flatpak ? (hostState(profile.id)?['exitCode'] as int? ?? code) : code,

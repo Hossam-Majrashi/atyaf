@@ -63,7 +63,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get wmClassHelp =>
-      'حدد StartupWMClass فقط إذا كان البرنامج يحتاجه لربط نوافذه باختصار قائمة التطبيقات.';
+      'على KDE تُكتشف فئة النافذة بعد التشغيل. لأسطح المكتب الأخرى أو عند تعذّر الربط، حدّد StartupWMClass يدويًا.';
 
   @override
   String get folder => 'مجلد البرنامج';

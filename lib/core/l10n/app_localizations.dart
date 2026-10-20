@@ -153,7 +153,7 @@ abstract class AppLocalizations {
   /// No description provided for @wmClassHelp.
   ///
   /// In en, this message translates to:
-  /// **'Set StartupWMClass only when the application requires it to match its windows to the desktop shortcut.'**
+  /// **'On KDE, the window class is detected after launch. On other desktops or if matching fails, set StartupWMClass manually.'**
   String get wmClassHelp;
 
   /// No description provided for @folder.

@@ -63,7 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wmClassHelp =>
-      'Set StartupWMClass only when the application requires it to match its windows to the desktop shortcut.';
+      'On KDE, the window class is detected after launch. On other desktops or if matching fails, set StartupWMClass manually.';
 
   @override
   String get folder => 'Application folder';

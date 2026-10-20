@@ -7,6 +7,7 @@ import 'linux_runtime.dart';
 import 'linux_repository.dart';
 import 'linux_archives.dart';
 import 'linux_processes.dart';
+import 'linux_profile_windows.dart';
 import 'linux_desktop_entries.dart';
 import 'linux_backup.dart';
 import 'linux_commands.dart';
@@ -62,8 +63,17 @@ final class LinuxIntegration {
       terminalHelper,
       await rootBundle.loadString('assets/linux/terminal_commands.py'),
     );
+    final windowHelper = '${runtime.root}/profile_windows.py';
+    await LinuxCommands.writePrivateFile(
+      windowHelper,
+      await rootBundle.loadString('assets/linux/profile_windows.py'),
+    );
     final repository = LinuxRepository('${runtime.root}/library.sqlite');
-    final processes = LinuxProcesses(runtime, repository);
+    final processes = LinuxProcesses(
+      runtime,
+      repository,
+      windows: LinuxProfileWindows(runtime, windowHelper),
+    );
     processes.reconcile();
     final archives = LinuxArchives(runtime, helper);
     final icon = await rootBundle.load('assets/icon/icon.png');

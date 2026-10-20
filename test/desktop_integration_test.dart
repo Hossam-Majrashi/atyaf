@@ -11,14 +11,35 @@ import 'package:atyaf/platform/linux/linux_backup.dart';
 import 'package:atyaf/platform/linux/linux_desktop_entries.dart';
 import 'package:atyaf/platform/linux/linux_managed_storage.dart';
 import 'package:atyaf/platform/linux/linux_processes.dart';
+import 'package:atyaf/platform/linux/linux_profile_windows.dart';
 import 'package:atyaf/platform/linux/linux_repository.dart';
 import 'package:atyaf/platform/linux/linux_runtime.dart';
 import 'package:atyaf/screens/desktop/shortcut_launch.dart';
 import 'package:atyaf/shared/models/library_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class RecordingWindows extends LinuxProfileWindows {
+  RecordingWindows(LinuxRuntime runtime) : super(runtime, 'unused');
+  final calls = <Map<String, Object>>[];
+
+  @override
+  Future<void> update(
+    String profileId,
+    int pid,
+    String identity, {
+    required bool activate,
+  }) async {
+    calls.add({
+      'profileId': profileId,
+      'pid': pid,
+      'identity': identity,
+      'activate': activate,
+    });
+  }
+}
+
 class RacingProcesses extends LinuxProcesses {
-  RacingProcesses(super.runtime, super.repository);
+  RacingProcesses(super.runtime, super.repository, {super.windows});
   bool raceNextLaunch = false;
 
   @override
@@ -38,6 +59,7 @@ void main() {
   late LinuxRepository repository;
   late LibraryController library;
   late LinuxDesktopEntries entries;
+  late RecordingWindows windows;
   setUp(() async {
     temporary = await Directory.systemTemp.createTemp('atyaf desktop العربية ');
     runtime = LinuxRuntime(
@@ -51,7 +73,8 @@ void main() {
     );
     await Directory(runtime.root).create(recursive: true);
     repository = LinuxRepository('${runtime.root}/library.sqlite');
-    final processes = RacingProcesses(runtime, repository);
+    windows = RecordingWindows(runtime);
+    final processes = RacingProcesses(runtime, repository, windows: windows);
     final archives = LinuxArchives(
       runtime,
       File('assets/linux/archive_helper.py').absolute.path,
@@ -733,11 +756,16 @@ print(json.dumps([sys.argv[1:],os.environ['XDG_CONFIG_HOME']]))
     repository.saveProfile(profile);
     expect(await launchDesktopShortcut(library, profile.id), isFalse);
     expect(repository.history(profile.id), isEmpty);
+    expect(windows.calls, isEmpty);
     final review = await runtime.inspect(app.executable);
     repository.saveProfile(profile.trusted(review.fingerprint));
     expect(await launchDesktopShortcut(library, profile.id), isTrue);
     final record = repository.history(profile.id).single;
     expect(record['exitCode'], 0);
+    expect(windows.calls.single['activate'], isFalse);
+    expect(windows.calls.single['profileId'], profile.id);
+    expect(windows.calls.single['pid'], record['pid']);
+    expect(windows.calls.single['identity'], record['identity']);
     expect(
       await File(record['stdout'] as String).readAsString(),
       'account launched\n',
@@ -833,6 +861,7 @@ os._exit(0)
     expect(await launchDesktopShortcut(library, profile.id), isTrue);
     expect(repository.history(profile.id), hasLength(1));
     expect(library.processes.isRunning(profile.id), isTrue);
+    expect(windows.calls.map((call) => call['activate']), [false, true]);
     expect(repository.errors, isEmpty);
   });
 
@@ -860,6 +889,54 @@ os._exit(0)
       expect(library.processes.pidFor(profile.id), pid);
       expect(repository.history(profile.id).length, 1);
       expect(library.processes.isRunning(profile.id), isTrue);
+      expect(windows.calls.map((call) => call['activate']), [false, true]);
+      expect(windows.calls.last['pid'], pid);
+      await library.processes.stop(profile.id, force: true);
+      await library.processes.waitForPendingExits();
+      await (library.processes as LinuxProcesses).activateWindow(profile.id);
+      expect(windows.calls, hasLength(2), reason: 'Do not activate stale PIDs');
     },
   );
+
+  test('Shortcut refresh retains learned classes and honors manual overrides', () async {
+    const app = Application(
+      id: 'app',
+      name: 'App',
+      executable: '/usr/bin/true',
+    );
+    const profile = Profile(id: 'class', applicationId: 'app', name: 'Account');
+    await entries.create(app, profile);
+    final shortcut = File(entries.filePath(profile.id));
+    expect(await shortcut.readAsString(), contains('StartupNotify=false\n'));
+    await shortcut.writeAsString(
+      '${await shortcut.readAsString()}StartupWMClass=RPCS3\nX-Atyaf-AutomaticWMClass=true\n',
+    );
+    await entries.create(app, profile);
+    expect(await shortcut.readAsString(), contains('StartupWMClass=RPCS3\n'));
+    await entries.create(
+      const Application(
+        id: 'app',
+        name: 'App',
+        executable: '/usr/bin/true',
+        wmClass: 'Manual.Class',
+      ),
+      profile,
+    );
+    expect(
+      await shortcut.readAsString(),
+      contains('StartupWMClass=Manual.Class\n'),
+    );
+    expect(
+      await shortcut.readAsString(),
+      isNot(contains('StartupWMClass=RPCS3')),
+    );
+    expect(
+      await shortcut.readAsString(),
+      isNot(contains('X-Atyaf-AutomaticWMClass=')),
+    );
+    // Clearing an explicit class returns to automatic matching, rather than
+    // preserving the old manual value as if it had been discovered.
+    await entries.create(app, profile);
+    expect(await shortcut.readAsString(), isNot(contains('StartupWMClass=')));
+  });
 }

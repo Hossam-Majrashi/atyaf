@@ -95,7 +95,13 @@ class LinuxDesktopEntries
     );
   }
 
-  String render(Application app, Profile profile, {String? applicationIcon}) {
+  String render(
+    Application app,
+    Profile profile, {
+    String? applicationIcon,
+    String? startupWMClass,
+  }) {
+    final windowClass = startupWMClass ?? app.wmClass;
     if (executable.contains('=')) {
       throw ArgumentError('Desktop executable cannot contain =');
     }
@@ -104,8 +110,9 @@ class LinuxDesktopEntries
         : '${quoteExec(executable)} --launch-profile ${quoteExec(profile.id)}';
     // Absolute paths avoid unsupported theme sizes and stale theme-name caches.
     return '[Desktop Entry]\nVersion=1.0\nType=Application\nName=${value(profile.name)}\n'
-        'Exec=$exec\nIcon=${value(applicationIcon ?? iconPath(profile.id))}\nTerminal=false\nCategories=Utility;\n'
-        '${app.wmClass.isEmpty ? '' : 'StartupWMClass=${value(app.wmClass)}\n'}';
+        'Exec=$exec\nIcon=${value(applicationIcon ?? iconPath(profile.id))}\nTerminal=false\nStartupNotify=false\nCategories=Utility;\n'
+        '${windowClass.isEmpty ? '' : 'StartupWMClass=${value(windowClass)}\n'}'
+        '${startupWMClass == null ? '' : 'X-Atyaf-AutomaticWMClass=true\n'}';
   }
 
   @override
@@ -140,7 +147,20 @@ class LinuxDesktopEntries
       if (result.exitCode != 0) {
         throw FileSystemException(result.stderr.toString().trim(), image.path);
       }
-      await file.writeAsString(render(application, profile), flush: true);
+      String? learnedClass;
+      if (application.wmClass.isEmpty && await file.exists()) {
+        final previous = await file.readAsString();
+        if (previous.split('\n').contains('X-Atyaf-AutomaticWMClass=true')) {
+          learnedClass = RegExp(
+            r'^StartupWMClass=([A-Za-z0-9_.-]{1,200})$',
+            multiLine: true,
+          ).firstMatch(previous)?.group(1);
+        }
+      }
+      await file.writeAsString(
+        render(application, profile, startupWMClass: learnedClass),
+        flush: true,
+      );
       final old = File(iconPath(profile.id, legacy: true));
       if (await old.exists()) {
         await old.delete();
