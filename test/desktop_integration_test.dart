@@ -608,6 +608,10 @@ print(json.dumps([sys.argv[1:],dict(os.environ)],ensure_ascii=False))
 import json,os,sys
 print(json.dumps([sys.argv[1:],os.environ.get('KDE_SESSION_VERSION'),os.environ.get('XDG_CONFIG_HOME')]))
 ''');
+    // xdg-utils releases use either kde-open or a version-suffixed handler.
+    for (final name in ['kde-open5', 'kde-open6']) {
+      await Link('${bin.path}/$name').create('kde-open');
+    }
     final legacy = File('${bin.path}/kfmclient');
     await legacy.writeAsString(
       '#!/bin/sh\necho legacy-path-was-used >&2\nexit 1\n',
@@ -618,6 +622,8 @@ print(json.dumps([sys.argv[1:],os.environ.get('KDE_SESSION_VERSION'),os.environ.
     runtime.host['PATH'] = '${bin.path}:/usr/bin:/bin';
     runtime.host['XDG_CURRENT_DESKTOP'] = 'KDE';
     runtime.host['KDE_SESSION_VERSION'] = '6';
+    // Advertise a graphical session; fake handlers never connect to a server.
+    runtime.host['DISPLAY'] = ':123';
     const profile = Profile(id: 'kde', applicationId: 'app', name: 'KDE');
     repository.saveProfile(profile);
     await runtime.prepare(profile);
@@ -660,6 +666,7 @@ print(json.dumps([sys.argv[1:],os.environ['XDG_CONFIG_HOME']]))
       );
       runtime.host['XDG_CURRENT_DESKTOP'] = 'X-Generic';
       runtime.host['DE'] = 'generic';
+      runtime.host['DISPLAY'] = ':123';
       runtime.host['PATH'] = '${temporary.path}:/usr/bin:/bin';
       runtime.host['BROWSER'] = '/usr/bin/false';
       const profile = Profile(

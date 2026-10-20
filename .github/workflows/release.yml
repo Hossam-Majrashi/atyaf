@@ -40,7 +40,9 @@ jobs:
       - uses: ./.github/actions/setup-linux
       - run: flutter analyze
       - run: flutter test --concurrency=1 --reporter expanded
-      - run: python3 tool/verify_contract.py
+      - run: |
+          python3 tool/normalize_l10n.py
+          python3 tool/verify_contract.py
       - run: bash -n build_linux.sh flatpak_linux.sh
 
   build:

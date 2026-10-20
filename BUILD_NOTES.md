@@ -206,6 +206,8 @@ AppImage embeds `gh-releases-zsync|Hossam-Majrashi|atyaf|latest|atyaf-*-linux-<a
 
 Local verification: clean analysis and all 221 Flutter tests pass, including ten Python validator boundary tests invoked by a Flutter test and four explicit native/Flatpak armv7/i686 rejection cases. All seven native x86_64 1.2.0 files were built with the actual scripts and passed the real package/Flatpak validator; SHA256SUMS was generated. Existing 1.1.0 dist files were preserved. ARM64/remote publication is separately verified through the workflow outcome, not inferred from local mocks. Installed applications, accounts and credentials are unchanged by this release build. Release notes explain dependencies, supported targets, zsync and checksum verification in both languages.
 
+The first hosted run caught fixture assumptions absent from this workstation: Ubuntu 24.04's 7-Zip 23 cannot decode the original Zstd SquashFS fixture, and its older xdg-open needs display metadata/version-suffixed KDE handlers. Regenerated the same data-only SquashFS fixture with gzip, supplied both KDE handler spellings and a nonconnecting fixture DISPLAY, and made xdg-utils an explicit CI dependency. All 34 affected desktop/icon integration tests pass locally using the actual official 7-Zip 23.01 binary. No failing test is skipped; the pre-existing real Wayland GTK probe remains conditional on an available Wayland session. Normalize generated localization documentation after tests before the source-contract gate.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
