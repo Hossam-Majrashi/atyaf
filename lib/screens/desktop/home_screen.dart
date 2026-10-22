@@ -162,6 +162,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         children: [
           Text(l.managedLinksHelp),
+          if (source.isExecutable) ...[
+            const SizedBox(height: 12),
+            Text(l.executableImportHelp),
+          ],
           if (source.isAppImage) ...[
             const SizedBox(height: 12),
             Text(l.appImageHelp),
@@ -220,6 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         final result = await FilePicker.platform.pickFiles(
           dialogTitle: kind == 'archive' ? l.archive : l.executable,
+          allowMultiple: false,
+          withData: false,
         );
         final path = result?.files.single.path;
         if (path == null) {
@@ -229,22 +235,17 @@ class _HomeScreenState extends State<HomeScreen> {
           staged = await library.storage.stage(path, archive: true);
           executable = await chooseExecutable(staged);
         } else {
-          executable = path;
+          staged = await library.storage.stageExecutable(path);
+          executable = await chooseExecutable(staged);
         }
       }
       if (executable == null || !mounted) {
         return;
       }
-      if (staged == null) {
-        await library.runtime.inspect(executable);
-      }
-      if (!mounted) {
-        return;
-      }
       final selectedIcon = await showDialog<String>(
         context: context,
         builder: (_) => ApplicationIconPicker(
-          root: staged?.root ?? p.dirname(executable!),
+          root: staged!.root,
           entries: library.entries,
           notice: appImageIconNotice(staged),
         ),
@@ -255,24 +256,18 @@ class _HomeScreenState extends State<HomeScreen> {
       final iconPng = selectedIcon.isEmpty ? null : selectedIcon;
       final name = await nameDialog(
         kind == 'appimage'
-            ? p.basenameWithoutExtension(staged!.source)
+            ? p.basenameWithoutExtension(staged.source)
             : p.basename(executable),
       );
       if (name == null) {
         return;
       }
-      final app = staged == null
-          ? await library.applicationsService.add(
-              name,
-              executable,
-              iconPng: iconPng,
-            )
-          : await library.applicationsService.addManaged(
-              name,
-              staged,
-              executable,
-              iconPng: iconPng,
-            );
+      final app = await library.applicationsService.addManaged(
+        name,
+        staged,
+        executable,
+        iconPng: iconPng,
+      );
       library.select(app.id);
     } finally {
       if (staged != null) {
@@ -315,18 +310,27 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(l.updateHelp),
           const SizedBox(height: 20),
           ListTile(
+            leading: const Icon(Icons.terminal_rounded),
+            title: Text(l.executable),
+            subtitle: Text(l.executableFormats),
+            onTap: () => Navigator.pop(context, 'executable'),
+          ),
+          ListTile(
             leading: const Icon(Icons.folder_open_rounded),
             title: Text(l.folder),
+            subtitle: Text(l.folderFormats),
             onTap: () => Navigator.pop(context, 'folder'),
           ),
           ListTile(
             leading: const Icon(Icons.inventory_2_outlined),
             title: Text(l.archive),
+            subtitle: Text(l.archiveFormats),
             onTap: () => Navigator.pop(context, 'archive'),
           ),
           ListTile(
             leading: const Icon(Icons.apps_rounded),
             title: Text(l.appImage),
+            subtitle: Text(l.appImageFormats),
             onTap: () => Navigator.pop(context, 'appimage'),
           ),
         ],
@@ -341,10 +345,11 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (kind == 'appimage') {
       path = await pickAppImage();
     } else {
-      path = (await FilePicker.platform.pickFiles(dialogTitle: l.archive))
-          ?.files
-          .single
-          .path;
+      path = (await FilePicker.platform.pickFiles(
+        dialogTitle: kind == 'executable' ? l.executable : l.archive,
+        allowMultiple: false,
+        withData: false,
+      ))?.files.single.path;
     }
     if (path == null) {
       return;
@@ -352,6 +357,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final sourcePath = path;
     final staged = kind == 'appimage'
         ? await library.storage.stageAppImage(sourcePath)
+        : kind == 'executable'
+        ? await library.storage.stageExecutable(sourcePath)
         : await library.storage.stage(sourcePath, archive: kind == 'archive');
     try {
       final relative =
@@ -387,6 +394,10 @@ class _HomeScreenState extends State<HomeScreen> {
             SelectableText(relative),
             const SizedBox(height: 20),
             Text(l.updateHelp),
+            if (staged.isExecutable) ...[
+              const SizedBox(height: 12),
+              Text(l.executableImportHelp),
+            ],
             if (appImageIconNotice(staged) case final notice?) ...[
               const SizedBox(height: 12),
               Text(notice),
@@ -893,11 +904,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'executable',
-                      child: Text(l.executable),
+                      child: ListTile(
+                        title: Text(l.executable),
+                        subtitle: Text(l.executableFormats),
+                      ),
                     ),
-                    PopupMenuItem(value: 'folder', child: Text(l.folder)),
-                    PopupMenuItem(value: 'archive', child: Text(l.archive)),
-                    PopupMenuItem(value: 'appimage', child: Text(l.appImage)),
+                    PopupMenuItem(
+                      value: 'folder',
+                      child: ListTile(
+                        title: Text(l.folder),
+                        subtitle: Text(l.folderFormats),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'archive',
+                      child: ListTile(
+                        title: Text(l.archive),
+                        subtitle: Text(l.archiveFormats),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'appimage',
+                      child: ListTile(
+                        title: Text(l.appImage),
+                        subtitle: Text(l.appImageFormats),
+                      ),
+                    ),
                   ],
                   child: DecoratedBox(
                     decoration: BoxDecoration(

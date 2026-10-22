@@ -144,6 +144,31 @@ class WindowsTests(unittest.TestCase):
                 w.update(request)
         self.assertEqual(actions, ['loadScript', 'unloadScript'])
 
+    def test_generic_apprun_is_never_learned(self):
+        w.refresh_shortcut(self.desktop, 'AppRun')
+        self.assertNotIn('StartupWMClass=', self.desktop.read_text())
+        self.assertNotIn('X-Atyaf-AutomaticWMClass=', self.desktop.read_text())
+
+    def test_generic_automatic_peers_are_repaired_but_manual_classes_remain(self):
+        automatic = self.original + 'StartupWMClass=AppRun\nX-Atyaf-AutomaticWMClass=true\n'
+        self.desktop.write_text(automatic)
+        peer = self.desktop.with_name('com.h.atyaf.profile-peer.desktop')
+        peer.write_text(automatic.replace('"test"', '"peer"'))
+        manual = self.desktop.with_name('com.h.atyaf.profile-manual.desktop')
+        manual.write_text(automatic.replace('"test"', '"manual"').replace(
+            'X-Atyaf-AutomaticWMClass=true\n', ''))
+        before = manual.read_bytes()
+        w.repair_generic_shortcuts(self.desktop.parent)
+        for path in (self.desktop, peer):
+            content = path.read_text()
+            self.assertNotIn('StartupWMClass=', content)
+            self.assertNotIn('X-Atyaf-AutomaticWMClass=', content)
+            self.assertIn('Icon=/keep/logo.png\n', content)
+            self.assertIn('StartupNotify=false\n', content)
+        self.assertEqual(before, manual.read_bytes())
+        w.refresh_shortcut(self.desktop, 'RPCS3')
+        self.assertIn('StartupWMClass=RPCS3\n', self.desktop.read_text())
+
     def test_commands_are_argument_lists_with_deadlines(self):
         w.subprocess.run.return_value.stdout = '()'
         w.call('org.example.Test', '/test', 'org.example.Test.Method', 'a; not a shell')

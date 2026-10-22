@@ -41,10 +41,10 @@
 ### المميزات
 
 - **حسابات مستقلة:** مسارات منفصلة للإعدادات والبيانات والتخزين المؤقت والحالة والملفات المؤقتة، مع تخصيص وسائط التشغيل ومتغيرات البيئة ومجلد العمل.
-- **مكتبة برامج محلية:** إضافة ملف تنفيذي مثبت، أو استيراد مجلد برنامج كامل أو أرشيف محمول بصيغة `.tar.gz` أو `.tar.xz` أو `.tar.zst` أو ملف `.AppImage`.
+- **مكتبة برامج محلية:** حفظ نسخة مستقلة من ملف تنفيذي Linux ‏(ELF أو سكربت)، أو استيراد مجلد برنامج كامل أو أرشيف محمول بصيغة `.tar.gz` أو `.tar.xz` أو `.tar.zst` أو ملف `.AppImage`.
 - **بحث وتصفّح المكتبات الكبيرة:** ابحث عن اسم البرنامج مباشرةً من اللوحة الجانبية أو نافذة الاختيار في الأحجام الصغيرة. تُبنى عناصر البرامج والحسابات حسب الجزء الظاهر، مع تقليل قراءات قاعدة البيانات المتكررة.
 - **اختيار أيقونة من صور المشروع:** بعد اختيار الملف التنفيذي، تصفح صور المشروع ومجلداته الفرعية واختر أيقونة البرنامج، أو استخدم الاكتشاف التلقائي. يمكن تغييرها لاحقًا من «تعديل ← اختر أيقونة البرنامج». تُحفظ نسخة مستقلة مع المكتبة وتُحدّث أيقونات اختصارات الحسابات الموجودة عند الحفظ.
-- **تحديث يدوي دون فقد الحسابات:** استبدال ملفات البرنامج من مجلد أو أرشيف أو AppImage جديد مع الحفاظ على الاسم والأيقونة المختارة وبيانات الحسابات وإعداداتها، والتراجع عن الاستبدال عند فشل العملية. لا توجد تحديثات شبكية أو تلقائية.
+- **تحديث يدوي دون فقد الحسابات:** استبدال ملفات البرنامج من ملف تنفيذي مستقل أو مجلد أو أرشيف أو AppImage جديد مع الحفاظ على الاسم والأيقونة المختارة وبيانات الحسابات وإعداداتها، والتراجع عن الاستبدال عند فشل العملية. لا توجد تحديثات شبكية أو تلقائية.
 - **اختصارات بأسماء الحسابات:** حفظ الحساب ينشئ اختصارًا باسمه في قائمة التطبيقات، بأيقونة البرنامج الأصلية عند اكتشافها، أو أيقونة أطياف كبديل. يمكن تحديث اختصارات الحسابات السابقة من زر «إضافة إلى قائمة تطبيقات الجهاز».
 - **أوامر الطرفية:** إنشاء أمر مثل `rpcs3` أو `rpcs3-work` لكل حساب من زر «أمر الطرفية». يعمل عبر أطياف بإعدادات الحساب واعتماده وسجلاته، دون استبدال أوامر الجهاز الموجودة.
 - **تشغيل مباشر:** الاختصارات المعتمدة تشغّل الحساب دون ظهور نافذة أطياف، مع بقاء المشرف في الخلفية لتسجيل المخرجات وحالة الخروج. التشغيل الأول أو تغيّر الملف التنفيذي يتطلب مراجعة وتأكيدًا. على KDE تُظهر النقرة التالية نافذة الحساب العامل بدل تجاهلها، بما فيها نافذة Epic المخفية في صينية النظام. يتعرّف أطياف على فئة النافذة خلال أول 30 ثانية لربطها بالاختصار، دون قواعد KWin دائمة أو تغيير إعدادات الحساب. قد تتشارك الحسابات ذات فئة النافذة نفسها مجموعة واحدة؛ على أسطح المكتب الأخرى استخدم StartupWMClass يدويًا من محرر التطبيق. يتطلب التكامل التلقائي `gdbus` وواجهات KWin المتاحة؛ غيابهما لا يمنع التشغيل.
@@ -56,11 +56,15 @@
 
 ### الاستخدام
 
-1. أضف البرنامج من ملف تنفيذي أو مجلد كامل أو أرشيف محمول. عند الاستيراد، اختر الملف التنفيذي الرئيسي صراحةً، ثم اختر الأيقونة من معرض الصور أو عبر زر «اختيار صورة من الجهاز» لتحديد ملف PNG أو صورة أخرى مباشرةً، أو اضغط «استخدام الأيقونة التلقائية». للملف الخارجي، يمكنك اختيار مجلد المشروع من المعرض. يتوفر البحث في مسارات الصور بالضغط على Enter، وتظهر جميع النتائج في شبكة واحدة بالتمرير مع تحميل المعاينات تلقائيًا؛ لا تُتبع المجلدات المرتبطة رمزيًا.
+1. أضف البرنامج من ملف تنفيذي أو مجلد كامل أو أرشيف محمول. عند الاستيراد، اختر الملف التنفيذي الرئيسي صراحةً، ثم اختر الأيقونة من معرض الصور أو عبر زر «اختيار صورة من الجهاز» لتحديد ملف PNG أو صورة أخرى مباشرةً، أو اضغط «استخدام الأيقونة التلقائية». للملف المنفرد، يمكنك اختيار صورة أو مجلد صور آخر من المعرض. يتوفر البحث في مسارات الصور بالضغط على Enter، وتظهر جميع النتائج في شبكة واحدة بالتمرير مع تحميل المعاينات تلقائيًا؛ لا تُتبع المجلدات المرتبطة رمزيًا.
 2. أنشئ حسابًا وسمّه، واضبط المسارات أو وسائط التشغيل إذا كان البرنامج يحتاج خيارات خاصة بالملفات الشخصية.
 3. راجع الملف التنفيذي واعتمده عند التشغيل الأول.
 4. شغّل الحساب من أطياف أو ابحث عن اسمه في قائمة تطبيقات الجهاز. لتجديد اختصار موجود وأيقونته، اضغط «إضافة إلى قائمة تطبيقات الجهاز».
 5. للتشغيل من الطرفية، اضغط «أمر الطرفية» في بطاقة الحساب، واختر اسمًا مثل `rpcs3` ثم «إنشاء الأمر». بعدها اكتب `rpcs3` في الطرفية. تُنشأ الأوامر في `~/.local/bin`؛ إن لم يكن في PATH يظهر سطر إرشادي لإضافته دون تعديل ملفات الصدفة تلقائيًا. الأوامر خاصة بالحساب وتبقى بأسمائها عند إعادة تسميته؛ يمكن إزالتها من الحوار نفسه. قد تتقدّم aliases أو دوال الصدفة عليها. لا تقبل وسائط إضافية؛ اضبطها في محرر الحساب. يبقى مشرف أطياف عملية أمامية حتى اكتمال التشغيل والسجلات؛ إغلاق الطرفية أو مقاطعتها قد يوقفه. حذف الحساب أو استعادة المكتبة يزيل الأوامر المُدارة غير المعدّلة، ولا يعيد إنشائها تلقائيًا.
+
+خيار «ملف تنفيذي» يحفظ الملف وحده داخل `$XDG_DATA_HOME/com.h.atyaf/applications/` (افتراضيًا `~/.local/share/com.h.atyaf/applications/`)، دون تشغيله أو نسخ الملفات المجاورة؛ يبقى صالحًا بعد حذف الأصل من التنزيلات. للبرامج التي تحتاج مكتبات أو موارد مجاورة استخدم «مجلد البرنامج». تعرض قائمة الإضافة نوع الملف والصيغ بجانب كل خيار. المراجع الخارجية التي أُضيفت بإصدارات قديمة لا تُنقل تلقائيًا: اختر «تحديث ← ملف تنفيذي» لاستيراد نسخة مع الحفاظ على الحسابات. لا تُحذف النسخة الأصلية.
+
+فئة `AppRun` عامة وتشترك فيها برامج AppImage مختلفة؛ ربطها تلقائيًا تسبب بظهور أيقونة PCSX2 لنافذة RPCS3. لا تتعلم النسخة الجديدة هذه الفئة، وتزيل الربط التلقائي القديم من اختصارات أطياف عند تشغيل حساب على KDE، مع إبقاء الفئات اليدوية والصور والوسائط كما هي. لا تفرض فئة على نافذة البرنامج أو قواعد KWin دائمة؛ يظل التجميع والأيقونة الاحتياطية تابعين لبيانات البرنامج وKDE. لا تستخدم `AppRun` للربط اليدوي.
 
 إذا عرض shadPS4 عبارة `shadPS4 Emulator CLI` والمساعدة ثم خرج برمز `255`، فراجع وسائط الحساب: النسخة المبلّغ عنها تحتاج `--big-picture` لفتح واجهة Big Picture. من محرر الحساب اختر «shadPS4: استخدام Big Picture»، وأكّد ثم احفظ وأعد التشغيل. يجب أن تدعم النسخة هذا الوسيط؛ لا يضيفه أطياف تلقائيًا. للواجهة المكتبية الكاملة استورد [shadPS4 Qt Launcher](https://github.com/shadps4-emu/shadps4-qtlauncher/releases) المنفصل، أو حدّد لعبة عبر `--game`. حوارات إعداد المحاكي أو نقل الحفظ تبقى بقرارك؛ لا ينقل أطياف البيانات نيابةً عنك.
 
@@ -116,7 +120,7 @@ flutter build linux --release --target-platform linux-x64
 
 </div>
 
-تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.3-linux-x86_64.AppImage` و`atyaf-1.2.3-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
+تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.4-linux-x86_64.AppImage` و`atyaf-1.2.4-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
 
 تجد التنزيلات المنشورة في [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). يستخدم مسار [Linux release](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) مشغّلات أصلية منفصلة للمعماريتين، ويختبر المشروع ويفحص ELF وبيانات الحزم وzsync وFlatpak قبل نشر 14 ملفًا و`SHA256SUMS`. لا يُنشر الإصدار إلا بعد نجاح المعماريتين؛ لا يُفترض توفر حزمة لمجرد وجود إعداد بنائها. تفاصيل التشغيل والتحقق في [ملاحظات البناء](BUILD_NOTES.md).
 
@@ -168,10 +172,10 @@ The screenshots are displayed in the Arabic section above:
 ### Features
 
 - **Independent profiles:** Separate config, data, cache, state and temporary paths, with configurable arguments, environment variables and working directory.
-- **Local application library:** Reference an installed executable, or import a complete application folder, a portable `.tar.gz`, `.tar.xz` or `.tar.zst` archive, or an `.AppImage` file.
+- **Local application library:** Save an independent copy of a Linux executable (ELF or script), or import a complete application folder, a portable `.tar.gz`, `.tar.xz` or `.tar.zst` archive, or an `.AppImage` file.
 - **Search and large libraries:** Find application names directly in the sidebar or compact-window selector. Application/profile rows are built on demand, with fewer repeated database reads.
 - **Choose an icon from project images:** After selecting an executable, browse images throughout the project and its subfolders, or keep automatic discovery. Change it later through **Edit → Choose an application icon**. A separate copy is saved with the library, and existing account shortcut icons are refreshed on save.
-- **Manual updates without losing profiles:** Replace application files from a new folder, archive or AppImage while preserving the name, chosen icon, profile data and settings, with rollback on failed replacement. No remote or automatic update checks.
+- **Manual updates without losing profiles:** Replace application files from a standalone executable, new folder, archive or AppImage while preserving the name, chosen icon, profile data and settings, with rollback on failed replacement. No remote or automatic update checks.
 - **Account-named shortcuts:** Saving a profile adds a system applications-menu shortcut with its own name and the original application's icon when discoverable, falling back to Atyaf's icon. Existing shortcuts can be refreshed using **Add to applications menu**.
 - **Terminal commands:** Create a per-profile command such as `rpcs3` or `rpcs3-work` using **Terminal command**. It invokes Atyaf with the account's settings, approval and logging, without replacing existing host commands.
 - **Direct launching:** Approved shortcuts launch without the Atyaf window. A background supervisor preserves complete output and exit status. First launches and changed executables require review and approval. On KDE, clicking again presents the running profile, including Epic's tray-hidden window, instead of silently ignoring it. Atyaf learns the actual window class during the first 30 seconds to associate it with the shortcut, without permanent KWin rules or profile changes. Profiles sharing a class may share a taskbar group; on other desktops, configure StartupWMClass manually in the application editor. Automatic integration requires available `gdbus` and KWin interfaces; their absence never blocks launching.
@@ -183,11 +187,15 @@ The screenshots are displayed in the Arabic section above:
 
 ### Usage
 
-1. Add an executable, complete application folder or portable archive. Explicitly select the main executable when importing, then select a gallery image, use **Choose image from device** to pick a PNG or another image file directly, or select **Use automatic icon**. For an external executable, the gallery lets you choose its project folder. Search image paths by pressing Enter and scroll through all results in one grid with automatically loaded previews; symbolic-link directories are not followed.
+1. Add an executable, complete application folder or portable archive. Explicitly select the main executable when importing, then select a gallery image, use **Choose image from device** to pick a PNG or another image file directly, or select **Use automatic icon**. For a standalone executable, choose an image file or another image folder from the gallery. Search image paths by pressing Enter and scroll through all results in one grid with automatically loaded previews; symbolic-link directories are not followed.
 2. Create and name a profile. Configure paths or arguments if the application requires its own profile options.
 3. Review and approve the executable on the first launch.
 4. Launch from Atyaf or search for the profile name in your system applications menu. Use **Add to applications menu** to refresh an existing shortcut and its icon.
 5. To launch from a terminal, select **Terminal command** on the profile card, enter a name such as `rpcs3`, then **Create command**. Type `rpcs3` in your terminal. Commands live in `~/.local/bin`; if it is not in PATH, the dialog shows instructions without editing shell files. Commands remain bound to their specific profile ID and are not renamed automatically; remove them from the same dialog. Shell aliases/functions can take precedence. Extra arguments are explicitly refused; configure them in the profile editor. The Atyaf supervisor is a foreground process until execution/logging finishes; closing/interruption of the terminal can stop it. Profile deletion or library restoration removes unchanged managed commands without recreating them automatically.
+
+**Executable** copies only the selected file into `$XDG_DATA_HOME/com.h.atyaf/applications/` (default `~/.local/share/com.h.atyaf/applications/`), without executing it or copying neighbors. Deleting the original download no longer removes the managed copy. Use **Application folder** for programs needing adjacent resources/libraries. The Add menu describes file types/formats for every option. Legacy external references are not silently moved: use **Update → Executable** to import a copy while preserving profiles. The original is not deleted.
+
+`AppRun` is a generic class shared by unrelated AppImages; learning it made KDE show PCSX2's icon for RPCS3. Atyaf no longer learns this class and removes old automatically learned AppRun mappings from its shortcuts on a KDE profile launch, preserving manual classes, icons and arguments. It does not force a window identity or install permanent KWin rules; grouping/fallback icons still depend on application metadata and KDE. Do not use `AppRun` for manual matching.
 
 If shadPS4 prints `shadPS4 Emulator CLI` and usage, then exits with `255`, check the profile arguments: the reported version needs `--big-picture` to open Big Picture. In the profile editor choose **shadPS4: use Big Picture**, confirm, Save and restart. The imported version must support this flag; Atyaf never adds it automatically. For the full desktop GUI import the separate [shadPS4 Qt Launcher](https://github.com/shadps4-emu/shadps4-qtlauncher/releases), or supply a game with `--game`. Emulator setup/save-migration choices remain yours; Atyaf does not migrate data for you.
 
@@ -231,7 +239,7 @@ To generate DEB, RPM, Arch, general archive and AppImage packages, or a Flatpak 
 ./flatpak_linux.sh x64
 ```
 
-Packages are written to `dist/`, for example `atyaf-1.2.3-linux-x86_64.AppImage` and `atyaf-1.2.3-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
+Packages are written to `dist/`, for example `atyaf-1.2.4-linux-x86_64.AppImage` and `atyaf-1.2.4-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
 
 Published downloads are under [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). The [Linux release workflow](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) uses separate architecture-native runners, runs analysis/tests, and inspects ELF headers, package metadata, zsync and Flatpak before publishing 14 assets plus `SHA256SUMS`. Both architectures must pass before publication; a build configuration alone does not imply an available download. See [build notes](BUILD_NOTES.md) for operation and verification details.
 

@@ -76,6 +76,33 @@ class LinuxManagedStorage implements ManagedStorageService {
   }
 
   @override
+  Future<ManagedSource> stageExecutable(String source) async {
+    if (!p.isAbsolute(source) || source.contains('\x00')) {
+      throw ArgumentError('Executable path must be absolute');
+    }
+    final parent = await stagingParent();
+    final root = '${parent.path}/${const Uuid().v4()}';
+    try {
+      if (archives is! LinuxArchives) {
+        throw StateError('Linux executable importer unavailable');
+      }
+      await (archives as LinuxArchives).invoke([
+        'executable',
+        LinuxCommands.hostPath(source),
+        root,
+      ]);
+      final staged = ManagedSource(source, root, [
+        p.basename(source),
+      ], isExecutable: true);
+      await review(staged, staged.executables.single);
+      return staged;
+    } catch (_) {
+      await runtime.deleteManaged(root);
+      rethrow;
+    }
+  }
+
+  @override
   Future<ManagedSource> stageAppImage(String source) async {
     final parent = await stagingParent();
     final root = '${parent.path}/${const Uuid().v4()}';

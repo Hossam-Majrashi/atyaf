@@ -155,6 +155,9 @@ class LinuxDesktopEntries
             r'^StartupWMClass=([A-Za-z0-9_.-]{1,200})$',
             multiLine: true,
           ).firstMatch(previous)?.group(1);
+          if (learnedClass?.toLowerCase() == 'apprun') {
+            learnedClass = null;
+          }
         }
       }
       await file.writeAsString(

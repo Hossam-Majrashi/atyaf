@@ -118,6 +118,144 @@ void main() {
     expect(result.stdout, version);
   }
 
+  test('Standalone executable is copied without execution or neighbors and runs after source deletion', () async {
+    final input = await folder(
+      'single source',
+      'managed',
+      executable: 'rusty-psn',
+    );
+    final binary = File('${input.path}/rusty-psn');
+    final marker = File('${temporary.path}/executed');
+    await binary.writeAsString(
+      '#!/bin/sh\nprintf managed\nprintf started > "${marker.path}"\n',
+    );
+    final original = await binary.readAsBytes();
+    final staged = await storage.stageExecutable(binary.path);
+    expect(staged.isExecutable, isTrue);
+    expect(staged.executables, ['rusty-psn']);
+    expect(await Directory(staged.root).list().length, 1);
+    expect(await binary.readAsBytes(), original);
+    expect((await binary.stat()).mode & 0x1ff, 0x1ed);
+    final app = await applications.addManaged('Rusty', staged, 'rusty-psn');
+    await storage.discard(staged);
+    await input.delete(recursive: true);
+    expect(app.executableRelative, 'rusty-psn');
+    expect(app.portableRoot, startsWith('${runtime.root}/applications/'));
+    expect((await File(app.executable).stat()).mode & 0x1ff, 0x1c0);
+    final profile = Profile(
+      id: 'single',
+      applicationId: app.id,
+      name: 'Single',
+    );
+    repository.saveProfile(profile);
+    expect(repository.history(profile.id), isEmpty);
+    expect(await marker.exists(), isFalse);
+    await expectLater(processes.launch(app, profile), throwsStateError);
+    final review = await runtime.inspect(app.executable);
+    final trusted = profile.trusted(review.fingerprint);
+    repository.saveProfile(trusted);
+    await processes.launch(app, trusted);
+    await processes.waitForPendingExits();
+    final record = repository.history(profile.id).single;
+    expect(record['exitCode'], 0);
+    expect(await File(record['stdout'] as String).readAsString(), 'managed');
+  });
+
+  test('External executable update migrates into managed storage preserving profiles, then backs up', () async {
+    final input = await folder('external', 'external', executable: 'rusty');
+    final source = File('${input.path}/rusty');
+    final app = await applications.add('Rusty', source.path);
+    final profile = Profile(
+      id: 'existing',
+      applicationId: app.id,
+      name: 'Keep',
+      arguments: ['one'],
+    );
+    repository.saveProfile(profile);
+    final staged = await storage.stageExecutable(source.path);
+    final updated = await updates.update(
+      app,
+      staged,
+      staged.executables.single,
+    );
+    await storage.discard(staged);
+    expect(updated.id, app.id);
+    expect(updated.name, app.name);
+    expect(repository.profiles.single.toJson(), profile.toJson());
+    expect(await source.exists(), isTrue);
+    await input.delete(recursive: true);
+    await expectVersion(updated, 'external');
+    final backup = LinuxBackup(runtime, repository, archives, processes);
+    final destination = '${temporary.path}/single-backup.tar.gz';
+    await backup.export(destination);
+    await File(updated.executable).writeAsString('damaged');
+    await backup.restore(destination);
+    await expectVersion(repository.applications.single, 'external');
+    expect(repository.profiles.single.name, profile.name);
+  });
+
+  test('Standalone executable rejects links, FIFOs, empty, privileged and non-executable files with cleanup', () async {
+    final input = File('${temporary.path}/برنامج "quote" %.sh');
+    await input.writeAsString('#!/bin/sh\nexit 0\n');
+    await Process.run('chmod', ['755', '--', input.path]);
+    final good = await storage.stageExecutable(input.path);
+    expect(good.executables.single, input.uri.pathSegments.last);
+    await storage.discard(good);
+    final link = await Link('${temporary.path}/link').create(input.path);
+    final fifo = '${temporary.path}/fifo';
+    await Process.run('mkfifo', [fifo]);
+    for (final path in [link.path, fifo, input.parent.path]) {
+      await expectLater(
+        storage.stageExecutable(path).timeout(const Duration(seconds: 5)),
+        throwsStateError,
+      );
+    }
+    for (final mode in ['4755', '644']) {
+      await Process.run('chmod', [mode, '--', input.path]);
+      await expectLater(storage.stageExecutable(input.path), throwsStateError);
+    }
+    await Process.run('chmod', ['755', '--', input.path]);
+    await input.writeAsString('');
+    await expectLater(storage.stageExecutable(input.path), throwsStateError);
+    await expectLater(storage.stageExecutable('relative'), throwsArgumentError);
+    await expectLater(storage.stageExecutable('/bad\x00'), throwsArgumentError);
+    expect(await Directory('${runtime.root}/staging').list().toList(), isEmpty);
+    expect(repository.applications, isEmpty);
+  });
+
+  test('Shortcut refresh drops learned AppRun but preserves explicit classes and icon', () async {
+    final app = await initial();
+    final profile = Profile(id: 'icon', applicationId: app.id, name: 'Icon');
+    repository.saveProfile(profile);
+    final entries = LinuxDesktopEntries(
+      runtime,
+      await File('assets/icon/icon.png').readAsBytes(),
+      executable: '/usr/bin/true',
+    );
+    await entries.create(app, profile);
+    final shortcut = File(entries.filePath(profile.id));
+    await shortcut.writeAsString(
+      '${await shortcut.readAsString()}StartupWMClass=AppRun\nX-Atyaf-AutomaticWMClass=true\n',
+    );
+    await entries.create(app, profile);
+    expect(await shortcut.readAsString(), isNot(contains('StartupWMClass=')));
+    expect(await File(entries.iconPath(profile.id)).exists(), isTrue);
+    final explicit = Application(
+      id: app.id,
+      name: app.name,
+      executable: app.executable,
+      portableRoot: app.portableRoot,
+      executableRelative: app.executableRelative,
+      wmClass: 'Manual.Class',
+    );
+    await entries.create(explicit, profile);
+    expect(
+      await shortcut.readAsString(),
+      contains('StartupWMClass=Manual.Class\n'),
+    );
+    expect(repository.profiles.single.toJson(), profile.toJson());
+  });
+
   for (final type in [1, 2]) {
     test(
       'AppImage type $type imports independently without changing source permissions or adjacent data',

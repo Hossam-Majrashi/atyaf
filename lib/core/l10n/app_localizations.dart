@@ -156,6 +156,36 @@ abstract class AppLocalizations {
   /// **'Executable'**
   String get executable;
 
+  /// No description provided for @executableFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'Linux ELF / scripts (.sh or no extension)'**
+  String get executableFormats;
+
+  /// No description provided for @folderFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete directory with program files'**
+  String get folderFormats;
+
+  /// No description provided for @archiveFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'.tar.gz · .tar.xz · .tar.zst'**
+  String get archiveFormats;
+
+  /// No description provided for @appImageFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'.AppImage'**
+  String get appImageFormats;
+
+  /// No description provided for @executableImportHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'An independent copy of this file is saved in the Atyaf library, so deleting the download will not remove it. For programs needing neighboring resources or libraries, import the complete application folder instead. Importing never runs the file.'**
+  String get executableImportHelp;
+
   /// No description provided for @wmClass.
   ///
   /// In en, this message translates to:
@@ -165,7 +195,7 @@ abstract class AppLocalizations {
   /// No description provided for @wmClassHelp.
   ///
   /// In en, this message translates to:
-  /// **'On KDE, the window class is detected after launch. On other desktops or if matching fails, set StartupWMClass manually.'**
+  /// **'KDE detects window classes after launch. Generic AppRun is skipped to avoid mixed taskbar icons; use an application-specific class.'**
   String get wmClassHelp;
 
   /// No description provided for @folder.
@@ -1006,7 +1036,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateHelp.
   ///
   /// In en, this message translates to:
-  /// **'Updates are manual. Select a complete folder, tar.gz, tar.xz or tar.zst archive, or a new AppImage. Only application files will be replaced; names, chosen icons, profiles, data and shortcuts remain unchanged. AppImages run as files, without automatic extraction or dependency installation.'**
+  /// **'Updates are manual. Select a standalone executable, complete folder, tar.gz, tar.xz or tar.zst archive, or a new AppImage. Only application files will be replaced; names, chosen icons, profiles, data and shortcuts remain unchanged. AppImages run as files, without automatic extraction or dependency installation.'**
   String get updateHelp;
 
   /// No description provided for @updateRunning.

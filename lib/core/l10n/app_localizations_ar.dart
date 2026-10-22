@@ -65,11 +65,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get executable => 'ملف تنفيذي';
 
   @override
+  String get executableFormats => 'Linux ELF / سكربتات (.sh أو بلا امتداد)';
+
+  @override
+  String get folderFormats => 'مجلد كامل يضم ملفات البرنامج';
+
+  @override
+  String get archiveFormats => '.tar.gz · .tar.xz · .tar.zst';
+
+  @override
+  String get appImageFormats => '.AppImage';
+
+  @override
+  String get executableImportHelp =>
+      'تُحفظ نسخة مستقلة من هذا الملف داخل مكتبة أطياف؛ حذف الملف من التنزيلات لا يحذف النسخة المحفوظة. إن كان البرنامج يحتاج موارد أو مكتبات مجاورة، استورد مجلد البرنامج كاملًا بدلًا من الملف وحده. لا يؤدي الاستيراد إلى تشغيل الملف.';
+
+  @override
   String get wmClass => 'فئة النافذة (اختياري)';
 
   @override
   String get wmClassHelp =>
-      'على KDE تُكتشف فئة النافذة بعد التشغيل. لأسطح المكتب الأخرى أو عند تعذّر الربط، حدّد StartupWMClass يدويًا.';
+      'يكتشف KDE فئة النافذة بعد التشغيل. تُتجاهل AppRun العامة لتجنب خلط أيقونات شريط المهام؛ استخدم فئة خاصة بالبرنامج.';
 
   @override
   String get folder => 'مجلد البرنامج';
@@ -557,7 +573,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get updateHelp =>
-      'التحديث يدوي. اختر مجلدًا كاملًا أو أرشيف tar.gz أو tar.xz أو tar.zst أو ملف AppImage جديدًا. تُستبدل ملفات البرنامج فقط؛ تبقى الأسماء والأيقونات المختارة والحسابات وبياناتها واختصاراتها كما هي. يعمل AppImage كملف دون استخراج تلقائي أو تثبيت اعتماديات.';
+      'التحديث يدوي. اختر ملفًا تنفيذيًا مستقلًا أو مجلدًا كاملًا أو أرشيف tar.gz أو tar.xz أو tar.zst أو ملف AppImage جديدًا. تُستبدل ملفات البرنامج فقط؛ تبقى الأسماء والأيقونات المختارة والحسابات وبياناتها واختصاراتها كما هي. يعمل AppImage كملف دون استخراج تلقائي أو تثبيت اعتماديات.';
 
   @override
   String get updateRunning =>

@@ -139,6 +139,118 @@ void main() {
       const Size(1100, 760),
       const Size(1600, 900),
     ]) {
+      testWidgets('Executable copy and format labels $language $size', (
+        tester,
+      ) async {
+        late File source;
+        await tester.runAsync(() async {
+          source = File('${temporary.path}/rusty-psn');
+          await source.writeAsString('#!/bin/sh\nprintf independent\n');
+          await Process.run('chmod', ['755', '--', source.path]);
+        });
+        picker.path = source.path;
+        final l = await open(tester, language, size);
+        await tester.tap(find.byType(PopupMenuButton<String>).first);
+        await tester.pumpAndSettle();
+        for (final label in [
+          l.executableFormats,
+          l.folderFormats,
+          l.archiveFormats,
+          l.appImageFormats,
+        ]) {
+          expect(find.text(label), findsOneWidget);
+        }
+        await tester.tap(find.text(l.executable));
+        await waitFor(
+          tester,
+          () => find.text(l.chooseExecutable).evaluate().isNotEmpty,
+        );
+        expect(find.text(l.executableImportHelp), findsOneWidget);
+        expect(picker.requests.single.$1, FileType.any);
+        expect(picker.requests.single.$3, isFalse);
+        expect(picker.requests.single.$4, isFalse);
+        await tap(tester, find.text('rusty-psn'));
+        await waitFor(
+          tester,
+          () =>
+              find
+                  .widgetWithText(TextButton, l.automaticIcon)
+                  .evaluate()
+                  .isNotEmpty &&
+              tester
+                      .widget<TextButton>(
+                        find.widgetWithText(TextButton, l.automaticIcon),
+                      )
+                      .onPressed !=
+                  null,
+        );
+        await tester.tap(find.text(l.automaticIcon));
+        await waitFor(tester, () => find.text(l.name).evaluate().isNotEmpty);
+        await tester.tap(find.text(l.save));
+        await waitFor(
+          tester,
+          () =>
+              repository.applications.isNotEmpty &&
+              find.byType(LinearProgressIndicator).evaluate().isEmpty,
+        );
+        final app = repository.applications.single;
+        expect(app.name, 'rusty-psn');
+        expect(app.executableRelative, 'rusty-psn');
+        expect(
+          app.portableRoot,
+          startsWith('${library.runtime.root}/applications/'),
+        );
+        await tester.runAsync(() async {
+          expect(
+            await source.readAsBytes(),
+            await File(app.executable).readAsBytes(),
+          );
+          await source.delete();
+          final result = await Process.run(app.executable, []);
+          expect(result.exitCode, 0);
+          expect(result.stdout, 'independent');
+        });
+        await tester.runAsync(() async {
+          await source.writeAsString('#!/bin/sh\nprintf updated\n');
+          await Process.run('chmod', ['755', '--', source.path]);
+        });
+        await tester.tap(find.byType(PopupMenuButton<String>).at(1));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l.update));
+        await waitFor(
+          tester,
+          () => find.text(l.updateSource).evaluate().isNotEmpty,
+        );
+        await tap(tester, find.text(l.executable));
+        await waitFor(
+          tester,
+          () => find.text(l.updateSummary).evaluate().isNotEmpty,
+        );
+        expect(find.text(l.executableImportHelp), findsOneWidget);
+        await tester.runAsync(() async {
+          expect(
+            await File(app.executable).readAsString(),
+            contains('independent'),
+          );
+        });
+        await tester.tap(find.text(l.update));
+        await waitFor(
+          tester,
+          () => find.text(l.updateSuccess).evaluate().isNotEmpty,
+        );
+        expect(repository.applications.single.id, app.id);
+        await tester.runAsync(() async {
+          await source.delete();
+          final result = await Process.run(
+            repository.applications.single.executable,
+            [],
+          );
+          expect(result.stdout, 'updated');
+        });
+        expect(repository.history('unused'), isEmpty);
+        expect(tester.takeException(), isNull);
+      });
+
       testWidgets(
         'AppImage import, rename, icon and manual update $language $size',
         (tester) async {
@@ -379,6 +491,42 @@ void main() {
         },
       );
     }
+  }
+
+  for (final language in ['ar', 'en']) {
+    testWidgets('Executable cancellation discards copy $language', (
+      tester,
+    ) async {
+      late File source;
+      await tester.runAsync(() async {
+        source = File('${temporary.path}/cancel.sh');
+        await source.writeAsString('#!/bin/sh\nexit 0\n');
+        await Process.run('chmod', ['755', '--', source.path]);
+      });
+      picker.path = source.path;
+      final l = await open(tester, language, const Size(800, 600));
+      await tester.tap(find.byType(PopupMenuButton<String>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l.executable));
+      await waitFor(
+        tester,
+        () => find.text(l.chooseExecutable).evaluate().isNotEmpty,
+      );
+      await tester.tap(find.text(l.cancel));
+      await waitFor(
+        tester,
+        () => find.byType(LinearProgressIndicator).evaluate().isEmpty,
+      );
+      expect(repository.applications, isEmpty);
+      await tester.runAsync(() async {
+        expect(await source.exists(), isTrue);
+        expect(
+          await Directory('${library.runtime.root}/staging').list().toList(),
+          isEmpty,
+        );
+      });
+      expect(tester.takeException(), isNull);
+    });
   }
 
   for (final cancelAt in ['picker', 'executable', 'icon', 'invalid']) {

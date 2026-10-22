@@ -65,11 +65,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get executable => 'Executable';
 
   @override
+  String get executableFormats => 'Linux ELF / scripts (.sh or no extension)';
+
+  @override
+  String get folderFormats => 'Complete directory with program files';
+
+  @override
+  String get archiveFormats => '.tar.gz · .tar.xz · .tar.zst';
+
+  @override
+  String get appImageFormats => '.AppImage';
+
+  @override
+  String get executableImportHelp =>
+      'An independent copy of this file is saved in the Atyaf library, so deleting the download will not remove it. For programs needing neighboring resources or libraries, import the complete application folder instead. Importing never runs the file.';
+
+  @override
   String get wmClass => 'Window class (optional)';
 
   @override
   String get wmClassHelp =>
-      'On KDE, the window class is detected after launch. On other desktops or if matching fails, set StartupWMClass manually.';
+      'KDE detects window classes after launch. Generic AppRun is skipped to avoid mixed taskbar icons; use an application-specific class.';
 
   @override
   String get folder => 'Application folder';
@@ -557,7 +573,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateHelp =>
-      'Updates are manual. Select a complete folder, tar.gz, tar.xz or tar.zst archive, or a new AppImage. Only application files will be replaced; names, chosen icons, profiles, data and shortcuts remain unchanged. AppImages run as files, without automatic extraction or dependency installation.';
+      'Updates are manual. Select a standalone executable, complete folder, tar.gz, tar.xz or tar.zst archive, or a new AppImage. Only application files will be replaced; names, chosen icons, profiles, data and shortcuts remain unchanged. AppImages run as files, without automatic extraction or dependency installation.';
 
   @override
   String get updateRunning =>

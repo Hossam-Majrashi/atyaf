@@ -131,7 +131,7 @@ def window_classes(pids):
             yield wm_class[1]
 
 
-def refresh_shortcut(desktop, wm_class=None):
+def refresh_shortcut(desktop, wm_class=None, generic_only=False):
     """Change only missing managed integration fields; retain explicit classes."""
     parent = desktop.parent
     parent_info = parent.stat()
@@ -152,6 +152,18 @@ def refresh_shortcut(desktop, wm_class=None):
                     profile_id in line for line in content.splitlines())):
         return
     lines = content.splitlines()
+    # AppRun is a shared AppImage entrypoint, not an application identity.
+    # Teaching it to KDE makes unrelated emulators share whichever icon wins.
+    automatic = 'X-Atyaf-AutomaticWMClass=true' in lines
+    generic = any(line.startswith('StartupWMClass=') and
+                  line.partition('=')[2].casefold() == 'apprun' for line in lines)
+    if generic_only and not (automatic and generic):
+        return
+    if automatic and generic:
+        lines = [line for line in lines if not line.startswith(
+            ('StartupWMClass=', 'X-Atyaf-AutomaticWMClass='))]
+    if wm_class and wm_class.casefold() == 'apprun':
+        wm_class = None
     if not any(line.startswith('StartupNotify=') for line in lines):
         lines.insert(1, 'StartupNotify=false')
     if wm_class and not any(line.startswith('StartupWMClass=') and
@@ -179,6 +191,18 @@ def refresh_shortcut(desktop, wm_class=None):
         pass
 
 
+def repair_generic_shortcuts(directory):
+    # Repair all managed peers: leaving even one AppRun mapping can still steal
+    # another application's taskbar icon. Explicit/manual classes stay intact.
+    for index, desktop in enumerate(directory.glob('com.h.atyaf.profile-*.desktop')):
+        if index >= 10000:
+            return
+        try:
+            refresh_shortcut(desktop, generic_only=True)
+        except (OSError, ValueError, UnicodeError):
+            continue
+
+
 def update(request):
     pid = request['pid']
     expected = request['identity']
@@ -189,6 +213,7 @@ def update(request):
             not re.fullmatch(r'com\.h\.atyaf\.profile-[A-Za-z0-9-]+\.desktop', desktop.name) or
             not desktop.is_file() or identity(pid) != expected):
         return
+    repair_generic_shortcuts(desktop.parent)
     refresh_shortcut(desktop)
     if not activate:
         deadline = time.monotonic() + 30

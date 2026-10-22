@@ -1,24 +1,24 @@
-# Atyaf 1.2.3 — أطياف
+# Atyaf 1.2.4 — أطياف
 
 ## العربية
 
-- تحسين تصفّح المكتبات الكبيرة: قوائم البرامج والحسابات تبني العناصر الظاهرة والقريبة فقط بدل إنشاء القائمة كاملة عند كل تحديث.
-- إضافة بحث فوري بأسماء البرامج في اللوحة الجانبية، واستبدال قائمة الاختيار الصغيرة بنافذة بحث قابلة للتمرير عند استخدام نافذة ضيقة.
-- تقليل قراءة SQLite وفك الأيقونات المتكرر، وإزالة إعادة تحميل مكتبة البرامج لكل حساب. تظل تغييرات النوافذ الأخرى والاستعادة ظاهرة تلقائيًا؛ لا يتوقف تحديث حالات التشغيل.
-- فهرسة سجل التشغيل حسب الحساب حتى لا تُقرأ وتُفك جميع سجلات المكتبة عند التحقق من كل حساب.
-- الحفاظ على بيانات البرامج والحسابات، والأيقونات، وموافقة التنفيذ، والاختصارات، والمخرجات الكاملة. لا تُشغّل برامج أو تُغيّر إعدادات الحسابات تلقائيًا.
+- إصلاح سبب خلط أيقونات شريط المهام في KDE بين RPCS3 وPCSX2: لا تُسجّل فئة `AppRun` العامة تلقائيًا، وتُزال روابطها التلقائية القديمة من اختصارات أطياف عند تشغيل حساب. تبقى الفئات اليدوية والأيقونات والأسماء ووسائط التشغيل كما هي.
+- خيار «ملف تنفيذي» يحفظ الآن نسخة مستقلة داخل مكتبة أطياف؛ حذف الملف الأصلي من التنزيلات لا يعطّل النسخة المحفوظة. لا يُشغّل الملف أثناء الاستيراد ولا تتغير صلاحيات الأصل.
+- إضافة «ملف تنفيذي» إلى مصادر التحديث اليدوي، بما يسمح بتحويل المراجع الخارجية القديمة إلى نسخ مُدارة مع الحفاظ على الحسابات وبياناتها وإعداداتها.
+- إظهار أنواع الملفات بجانب خيارات «إضافة برنامج»: Linux ELF / سكربتات `.sh` أو بلا امتداد، مجلد كامل، `.tar.gz` / `.tar.xz` / `.tar.zst`، و`.AppImage`.
+- استمرار اعتماد التنفيذ والتحقق الأمني والنسخ الاحتياطي والتراجع عند الفشل وحفظ المخرجات كاملة.
 
-**الحدود:** هذه تحسينات لتصفّح المكتبة والنقر والتمرير، وليست ضمانًا لسرعة نسخ أرشيف أو AppImage كبير أو تشغيل برنامج خارجي. لا يتغير عزل الحسابات أو التحقق الأمني عند الاستيراد والتشغيل.
+**الحدود:** انسخ مجلد البرنامج كاملًا إذا كان يحتاج موارد أو مكتبات مجاورة؛ استيراد ملف منفرد لا يجعل اعتمادياته محمولة. لا تُنقل المراجع الخارجية القديمة تلقائيًا؛ اختر «تحديث ← ملف تنفيذي». يعتمد تجميع النوافذ والأيقونة الاحتياطية على بيانات البرنامج وKDE؛ لا تُفرض هوية نافذة ولا قواعد KWin دائمة.
 
 ## English
 
-- Virtualize application and profile lists: build visible/nearby rows instead of constructing every row on each refresh.
-- Add immediate application-name search in the sidebar and a searchable, virtualized selector for compact windows.
-- Reuse unchanged SQLite library snapshots and validated icons; remove repeated application-library reads per profile. Other instances' commits and restoration still invalidate snapshots, and process reconciliation remains enabled.
-- Index launch history by profile instead of decoding the entire library's history for each account check.
-- Preserve applications, profiles, icons, executable approval, shortcuts and complete process output. No automatic application launch or profile-setting changes.
+- Prevent KDE taskbar icon confusion between RPCS3 and PCSX2 by no longer learning the generic `AppRun` class. Old automatically learned AppRun mappings in Atyaf shortcuts are repaired on a profile launch. Manual classes, images, names and launch arguments remain intact.
+- **Executable** now saves an independent managed copy: deleting the original download no longer breaks the saved application. Import does not execute the file or change source permissions.
+- Add **Executable** as a manual update source, including conversion of legacy external references into managed copies while preserving profiles, settings and data.
+- Describe file types beside every **Add application** option: Linux ELF / scripts (`.sh` or extensionless), complete folders, `.tar.gz` / `.tar.xz` / `.tar.zst`, and `.AppImage`.
+- Preserve executable approval, security validation, backup, failure rollback and complete process output.
 
-**Limitations:** these changes address library navigation and interaction, not the cost of copying large archives/AppImages or launching third-party programs. Import/launch security and profile separation are unchanged.
+**Limitations:** import the complete folder for applications needing adjacent resources/libraries; copying one executable does not bundle its dependencies. Legacy external references are not silently migrated: use **Update → Executable**. Window grouping/fallback icons still depend on application metadata and KDE; no window identity or permanent KWin rule is forced.
 
 ## Packages and verification / الحزم والتحقق
 
