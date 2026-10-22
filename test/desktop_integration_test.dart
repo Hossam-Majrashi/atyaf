@@ -384,6 +384,153 @@ void main() {
     }
   });
 
+  test(
+    'Connection and recovered UI advice requires narrow same-line signatures',
+    () {
+      for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+        for (final output in [
+          '[telemetry] Io ConnectionFailed',
+          '[EOS Telemetry] ConnectionFailed',
+          '[Social Overlay] STOMP error 4004: Inactive timeout',
+          '[social overlay] stomp error 4004: inactive timeout\r\n',
+        ]) {
+          expect(logAdvice(l, output), [l.serviceConnectionAdvice]);
+        }
+        expect(logAdvice(l, 'Recovered React hydration error #424'), [
+          l.recoveredUiAdvice,
+        ]);
+        expect(logAdvice(l, 'Recoverable React error #424'), [
+          l.recoveredUiAdvice,
+        ]);
+        for (final output in [
+          'normal startup: login succeeded; library refreshed',
+          'telemetry enabled\nConnectionFailed in unrelated subsystem',
+          'STOMP 4004\nInactive timeout',
+          'STOMP error 40040: Inactive timeout',
+          'STOMP error 4004: disconnected',
+          'ConnectionFailed',
+          'React error #424',
+          'Recovered React error #4240',
+          'Recovered cache\nReact error #424',
+        ]) {
+          expect(logAdvice(l, output), isEmpty, reason: output);
+        }
+      }
+    },
+  );
+
+  test('Interrupted connection-warning reports deduplicate advice and preserve history and full streams', () async {
+    const profile = Profile(
+      id: 'connection',
+      applicationId: 'app',
+      name: 'Epic',
+    );
+    repository.saveProfile(profile);
+    const warnings =
+        '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n';
+    final original = '$warnings${'x' * (300 * 1024)}\ncomplete ending العربية';
+    final directory = Directory('${runtime.profileRoot(profile.id)}/logs');
+    await directory.create(recursive: true);
+    final out = File('${directory.path}/out');
+    final err = File('${directory.path}/err');
+    await out.writeAsString(original);
+    await err.writeAsString(warnings);
+    repository.recordLaunch({
+      'id': 'connection',
+      'profileId': profile.id,
+      'pid': 123,
+      'start': '2026-10-22T04:28:16',
+      'stop': '2026-10-22T10:36:04',
+      'exitCode': null,
+      'interrupted': true,
+      'crashed': false,
+      'stdout': out.path,
+      'stderr': err.path,
+    });
+    final record = repository.history(profile.id).single;
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      final sections = await launchReport(l, library, profile, record);
+      final advice = sections
+          .singleWhere((s) => s.title == l.launchAdvice)
+          .text;
+      expect(
+        advice,
+        [
+          l.lostExitAdvice,
+          l.serviceConnectionAdvice,
+          l.recoveredUiAdvice,
+        ].join('\n\n'),
+      );
+      final report = await library.logs.completeReport(sections);
+      expect(report, contains(original));
+      expect(report, contains(warnings));
+      final destination = File(
+        '${temporary.path}/connection-${l.localeName}.txt',
+      );
+      await library.logs.exportReport(sections, destination.path);
+      expect(await destination.readAsString(), report);
+    }
+    expect(repository.history(profile.id).single, record);
+    expect(repository.profiles.single.toJson(), profile.toJson());
+    expect(await out.readAsString(), original);
+    expect(await err.readAsString(), warnings);
+  });
+
+  test(
+    'Linux warning output never overrides genuine success or failure status',
+    () async {
+      final executable = File('${temporary.path}/network fixture');
+      await executable.writeAsString(
+        '#!/usr/bin/python3\nimport sys\n'
+        'print("[telemetry] Io ConnectionFailed")\n'
+        'print("[Social Overlay] STOMP error 4004: Inactive timeout", file=sys.stderr)\n'
+        'sys.exit(int(sys.argv[1]))\n',
+      );
+      await Process.run('/usr/bin/chmod', ['700', executable.path]);
+      final app = Application(
+        id: 'network',
+        name: 'Fixture',
+        executable: executable.path,
+      );
+      repository.saveApplication(app);
+      final review = await runtime.inspect(app.executable);
+      for (final code in [0, 7]) {
+        final profile = Profile(
+          id: 'network-$code',
+          applicationId: app.id,
+          name: 'Fixture $code',
+          arguments: ['$code'],
+          trustedFingerprint: review.fingerprint,
+        );
+        repository.saveProfile(profile);
+        await library.processes.launch(app, profile);
+        await library.processes.waitForPendingExits();
+        final record = repository.history(profile.id).single;
+        expect(record['exitCode'], code);
+        expect(record['crashed'], code != 0);
+        expect(record['interrupted'], isFalse);
+        for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+          final report = await library.logs.completeReport(
+            await launchReport(l, library, profile, record),
+          );
+          expect(report, contains(l.serviceConnectionAdvice));
+          expect(report, isNot(contains(l.lostExitAdvice)));
+          expect(report, contains('[telemetry] Io ConnectionFailed\n'));
+          expect(
+            report,
+            contains('[Social Overlay] STOMP error 4004: Inactive timeout\n'),
+          );
+        }
+        expect(repository.history(profile.id).single, record);
+        expect(
+          repository.profiles.firstWhere((p) => p.id == profile.id).toJson(),
+          profile.toJson(),
+        );
+      }
+      expect(repository.errors, isEmpty);
+    },
+  );
+
   test('shadPS4 CLI advice reads stdout and preserves complete original reports', () async {
     const profile = Profile(id: 'shad', applicationId: 'app', name: 'Shadps4');
     repository.saveProfile(profile);

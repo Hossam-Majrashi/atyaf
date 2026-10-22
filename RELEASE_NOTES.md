@@ -1,24 +1,22 @@
-# Atyaf 1.2.4 — أطياف
+# Atyaf 1.2.5 — أطياف
 
 ## العربية
 
-- إصلاح سبب خلط أيقونات شريط المهام في KDE بين RPCS3 وPCSX2: لا تُسجّل فئة `AppRun` العامة تلقائيًا، وتُزال روابطها التلقائية القديمة من اختصارات أطياف عند تشغيل حساب. تبقى الفئات اليدوية والأيقونات والأسماء ووسائط التشغيل كما هي.
-- خيار «ملف تنفيذي» يحفظ الآن نسخة مستقلة داخل مكتبة أطياف؛ حذف الملف الأصلي من التنزيلات لا يعطّل النسخة المحفوظة. لا يُشغّل الملف أثناء الاستيراد ولا تتغير صلاحيات الأصل.
-- إضافة «ملف تنفيذي» إلى مصادر التحديث اليدوي، بما يسمح بتحويل المراجع الخارجية القديمة إلى نسخ مُدارة مع الحفاظ على الحسابات وبياناتها وإعداداتها.
-- إظهار أنواع الملفات بجانب خيارات «إضافة برنامج»: Linux ELF / سكربتات `.sh` أو بلا امتداد، مجلد كامل، `.tar.gz` / `.tar.xz` / `.tar.zst`، و`.AppImage`.
-- استمرار اعتماد التنفيذ والتحقق الأمني والنسخ الاحتياطي والتراجع عند الفشل وحفظ المخرجات كاملة.
+- توضيح تحذيرات `Telemetry ConnectionFailed` وانقطاع `Social Overlay STOMP 4004: Inactive timeout` في عرض السجل وتقارير التشغيل: تشير إلى اتصال تلك الخدمات ولا تثبت انهيار البرنامج أو تحدد سبب خروجه.
+- توضيح رسالة التعافي من خطأ عرض `React #424` دون افتراض نجاح كل وظائف الواجهة أو تفسير خروج لاحق.
+- التعرف على العلامات المرتبطة داخل السطر نفسه في معاينة stdout أو stderr، ومنع تكرار النصيحة في التقرير عند ورود التحذير في القناتين.
+- الحفاظ على رمز الخروج الفعلي، وتشخيص انقطاع الإشراف، والسجلات الأصلية كاملة عند النسخ والتصدير. لا تُعدّل السجلات التاريخية أو الحسابات أو خيارات التشغيل.
 
-**الحدود:** انسخ مجلد البرنامج كاملًا إذا كان يحتاج موارد أو مكتبات مجاورة؛ استيراد ملف منفرد لا يجعل اعتمادياته محمولة. لا تُنقل المراجع الخارجية القديمة تلقائيًا؛ اختر «تحديث ← ملف تنفيذي». يعتمد تجميع النوافذ والأيقونة الاحتياطية على بيانات البرنامج وKDE؛ لا تُفرض هوية نافذة ولا قواعد KWin دائمة.
+**الحدود:** لا يغيّر هذا الإصدار برنامج Epic أو يعالج خدماته البعيدة. حالة الخروج القديمة المفقودة لا يمكن استرجاعها من هذه السجلات، والتحذيرات وحدها لا تثبت التعطل. التشخيص يقرأ المعاينة المحدودة فقط؛ النسخ والتصدير يحفظان المخرجات كاملة. لا تُغيّر إعدادات الشبكة أو TLS أو التصيير أو العزل تلقائيًا.
 
 ## English
 
-- Prevent KDE taskbar icon confusion between RPCS3 and PCSX2 by no longer learning the generic `AppRun` class. Old automatically learned AppRun mappings in Atyaf shortcuts are repaired on a profile launch. Manual classes, images, names and launch arguments remain intact.
-- **Executable** now saves an independent managed copy: deleting the original download no longer breaks the saved application. Import does not execute the file or change source permissions.
-- Add **Executable** as a manual update source, including conversion of legacy external references into managed copies while preserving profiles, settings and data.
-- Describe file types beside every **Add application** option: Linux ELF / scripts (`.sh` or extensionless), complete folders, `.tar.gz` / `.tar.xz` / `.tar.zst`, and `.AppImage`.
-- Preserve executable approval, security validation, backup, failure rollback and complete process output.
+- Explain `Telemetry ConnectionFailed` and `Social Overlay STOMP 4004: Inactive timeout` in log previews and launch reports: these indicate connectivity issues in those services, not proof of an application crash or its exit cause.
+- Explain recovered `React #424` rendering errors without claiming every interface feature works or diagnosing a later exit.
+- Require related markers on the same line in either stdout or stderr previews; deduplicate report advice when both channels contain the warning.
+- Preserve genuine exit status, interrupted-supervisor diagnostics and complete original streams in copy/export. Historical records, profiles and launch arguments are not modified.
 
-**Limitations:** import the complete folder for applications needing adjacent resources/libraries; copying one executable does not bundle its dependencies. Legacy external references are not silently migrated: use **Update → Executable**. Window grouping/fallback icons still depend on application metadata and KDE; no window identity or permanent KWin rule is forced.
+**Limitations:** this does not modify Epic or repair its remote services. Old missing exit codes cannot be recovered from these logs; warnings alone do not establish a crash. Advice examines bounded previews only, while copy/export retains complete output. Network, TLS, rendering and sandbox settings are not changed automatically.
 
 ## Packages and verification / الحزم والتحقق
 

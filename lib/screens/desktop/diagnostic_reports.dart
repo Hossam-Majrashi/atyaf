@@ -29,19 +29,34 @@ Map<String, dynamic> crashRecord(
   return {...record, 'executable': record['executable'] ?? app?.executable};
 }
 
-List<String> logAdvice(AppLocalizations l, String stderr) => [
-  if (stderr.contains('shadPS4 Emulator CLI') &&
-      stderr.contains('Usage:') &&
-      stderr.contains('--big-picture'))
+List<String> logAdvice(AppLocalizations l, String output) => [
+  // Match related markers on one log line, not unrelated words elsewhere in
+  // a long preview. These warnings describe subsystems, never an exit status.
+  if (RegExp(
+    r'^[^\r\n]*\btelemetry\b[^\r\n]*\bConnectionFailed\b|'
+    r'^[^\r\n]*\bSTOMP\b[^\r\n]*\b4004\b[^\r\n]*Inactive timeout\b',
+    multiLine: true,
+    caseSensitive: false,
+  ).hasMatch(output))
+    l.serviceConnectionAdvice,
+  if (RegExp(
+    r'^[^\r\n]*\brecover(?:ed|able)\b[^\r\n]*\bReact\b[^\r\n]*#424\b',
+    multiLine: true,
+    caseSensitive: false,
+  ).hasMatch(output))
+    l.recoveredUiAdvice,
+  if (output.contains('shadPS4 Emulator CLI') &&
+      output.contains('Usage:') &&
+      output.contains('--big-picture'))
     l.shadps4CliAdvice,
-  if (RegExp(r'net_error\s*[=:]?\s*-202\b').hasMatch(stderr))
+  if (RegExp(r'net_error\s*[=:]?\s*-202\b').hasMatch(output))
     l.certificateAdvice,
   if (RegExp(
     r'Error contacting kwallet|org\.kde\.KWallet|Error contacting klauncher',
     caseSensitive: false,
-  ).hasMatch(stderr))
+  ).hasMatch(output))
     l.walletAdvice,
-  if (stderr.contains('xdg-open:') && stderr.contains('integer expected'))
+  if (output.contains('xdg-open:') && output.contains('integer expected'))
     l.desktopHandlerAdvice,
 ];
 
@@ -57,7 +72,7 @@ Future<List<ReportSection>> launchReport(
   final core = await library.logs.coreInfo(
     crashRecord(library, profile, record),
   );
-  final advice = [
+  final advice = <String>{
     if (record['interrupted'] == true) l.lostExitAdvice,
     for (final channel in ['stdout', 'stderr'])
       if (record[channel] is String)
@@ -65,7 +80,7 @@ Future<List<ReportSection>> launchReport(
           l,
           await library.logs.read(record[channel] as String, profile.id),
         ),
-  ];
+  };
   return [
     ReportSection(
       l.logs,

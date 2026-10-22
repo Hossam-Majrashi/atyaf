@@ -166,6 +166,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get launchAdvice => 'تشخيص التشغيل والاقتراحات';
 
   @override
+  String get serviceConnectionAdvice =>
+      'تشير Telemetry ConnectionFailed أو Social Overlay STOMP 4004 (Inactive timeout) إلى مشكلة اتصال في تلك الخدمات، وليس إلى دليل على انهيار البرنامج. إذا استمرت المشكلة فتحقق من اتصال الشبكة وحالة الخدمة. لا تثبت هذه الرسائل وحدها السبب أو حالة الخروج؛ ولا يغيّر أطياف إعدادات الشبكة أو TLS أو الحساب.';
+
+  @override
+  String get recoveredUiAdvice =>
+      'يذكر السجل التعافي من خطأ عرض React #424. الإبلاغ عن التعافي لا يضمن عمل كل وظائف الواجهة ولا يفسّر خروجًا لاحقًا. راجع حالة الخروج الفعلية والمخرجات اللاحقة؛ لا تُضاف خيارات عرض أو تعطيل للعزل تلقائيًا.';
+
+  @override
   String get lostExitAdvice =>
       'انقطع المشرف قبل تسجيل حالة الخروج. عدم توفر رمز الخروج لا يثبت انهيار البرنامج، ولا يمكن استرجاع الرموز القديمة المفقودة من هذه السجلات.';
 

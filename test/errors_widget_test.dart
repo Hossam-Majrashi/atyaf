@@ -225,6 +225,61 @@ void main() {
       const Size(1600, 900),
     ]) {
       testWidgets(
+        'Connection warnings $language $size retain interrupted status and raw output',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final l = lookupAppLocalizations(Locale(language));
+          const output =
+              '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n';
+          const error = '[Social Overlay] STOMP error 4004: Inactive timeout\n';
+          await tester.runAsync(() async {
+            final root = library.runtime.profileRoot('profile');
+            await File('$root/logs/stdout').writeAsString(output);
+            await File('$root/logs/stderr').writeAsString(error);
+          });
+          repository.updateLaunch('failed', {
+            'interrupted': true,
+            'exitCode': null,
+            'crashed': false,
+          });
+          final original = repository.history('profile').single;
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: Locale(language),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: LogsScreen(
+                library: library,
+                profile: repository.profiles.single,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byType(ExpansionTile));
+          await tester.pumpAndSettle();
+          for (
+            var attempt = 0;
+            attempt < 100 && find.text(l.recoveredUiAdvice).evaluate().isEmpty;
+            attempt++
+          ) {
+            await tester.runAsync(
+              () => Future<void>.delayed(const Duration(milliseconds: 20)),
+            );
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          expect(find.text(l.lostExitAdvice), findsOneWidget);
+          expect(find.text(l.recoveredUiAdvice), findsOneWidget);
+          expect(find.text(l.serviceConnectionAdvice), findsNWidgets(2));
+          expect(find.text(output), findsOneWidget);
+          expect(find.text(error), findsOneWidget);
+          expect(repository.history('profile').single, original);
+          expect(tester.takeException(), isNull);
+        },
+      );
+      testWidgets(
         'Clear diagnostics $language $size confirms, cancels, and preserves errors arriving during confirmation',
         (tester) async {
           tester.view.physicalSize = size;

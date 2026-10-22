@@ -166,6 +166,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get launchAdvice => 'Launch diagnostics and suggestions';
 
   @override
+  String get serviceConnectionAdvice =>
+      'Telemetry ConnectionFailed or Social Overlay STOMP 4004 (Inactive timeout) indicates a connection problem in those services, not proof that the application crashed. If the problem persists, check network access and the service status. These messages alone do not establish the cause or exit status; Atyaf does not change network, TLS or account settings.';
+
+  @override
+  String get recoveredUiAdvice =>
+      'The log reports a recovered React #424 rendering error. Recovery was reported, but this does not guarantee that every interface feature works or explain a later exit. Check the actual exit status and subsequent output; no rendering or sandbox flags are added automatically.';
+
+  @override
   String get lostExitAdvice =>
       'The supervisor was interrupted before recording the exit status. An unavailable exit code does not prove that the application crashed. Old missing codes cannot be recovered from these logs.';
 
