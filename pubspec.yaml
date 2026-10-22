@@ -1,7 +1,7 @@
 name: atyaf
 description: Independent application profiles and portable application management for Linux.
 publish_to: none
-version: 1.2.5+8
+version: 1.2.6+9
 environment:
   sdk: ^3.13.5
 dependencies:

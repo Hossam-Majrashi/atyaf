@@ -129,6 +129,7 @@ flutter build linux --release --target-platform linux-x64
 **فصل إعدادات الحسابات ليس عزلًا أمنيًا.** شغّل البرامج الموثوقة فقط. لا يُغيّر أطياف `HOME` الحقيقي افتراضيًا، والبرامج التي لا تدعم مسارات XDG تحتاج خياراتها الخاصة لفصل الحسابات.
 
 - تُحفظ المكتبة افتراضيًا في `~/.local/share/com.h.atyaf`، أو تحت `XDG_DATA_HOME` عند تخصيصه.
+- تُعرّف مجلدات المستندات والتنزيلات وغيرها من مجلدات XDG القياسية داخل `profiles/<id>/data/user-directories/` عند استخدام مسارات الإعدادات والبيانات الافتراضية، دون نسخ ملفاتك الشخصية. تُحفظ ملفات `user-dirs.dirs` التي أنشأتها أو عدّلتها والمسارات المخصصة؛ لا يلزم تغيير HOME. يعالج ذلك خطأ بدء Tauri `unknown path` المُعاد إنتاجه مع xrevive 0.1.22، ولا يضمن إصلاح كل خطأ يحمل النص نفسه.
 - لا تُحذف البرامج الخارجية أو بيانات المسارات المخصصة عند حذف حساب.
 - قد تحتوي السجلات والنسخ الاحتياطية ولقطات الشاشة على بيانات خاصة؛ راجعها قبل نشرها. نسخ التقرير إلى الحافظة محدود بـ64 ميبيبايت؛ تصدير TXT لا يقتطع السجلات.
 - لا يشمل تكامل المتصفح البرامج التي تستخدم متصفحًا مدمجًا أو تتجاوز `xdg-open`. لا يُضمن نجاح كل تدفقات تسجيل الدخول في جميع البرامج.
@@ -248,6 +249,7 @@ Published downloads are under [GitHub Releases](https://github.com/Hossam-Majras
 **Profile separation is not a security sandbox.** Only run trusted programs. Atyaf retains your real `HOME` by default; applications that ignore XDG paths require their own profile flags.
 
 - The library defaults to `~/.local/share/com.h.atyaf`, or the configured `XDG_DATA_HOME`.
+- Standard XDG Documents, Downloads and other user folders are defined under `profiles/<id>/data/user-directories/` for default config/data paths, without copying personal files. Existing user-created/edited `user-dirs.dirs` files and custom paths are preserved; HOME need not change. This fixes the Tauri startup `unknown path` reproduced with xrevive 0.1.22, not every error with that wording.
 - Deleting a profile does not delete external programs or custom data paths.
 - Logs, backups and screenshots may contain private information; review them before sharing. Clipboard reports have a 64 MiB limit; TXT export does not truncate logs.
 - Browser integration does not cover applications using embedded browsers or bypassing `xdg-open`. Not every application's authentication flow is guaranteed to work.

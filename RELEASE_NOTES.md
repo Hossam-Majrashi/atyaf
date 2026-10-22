@@ -1,22 +1,22 @@
-# Atyaf 1.2.5 — أطياف
+# Atyaf 1.2.6 — أطياف
 
 ## العربية
 
-- توضيح تحذيرات `Telemetry ConnectionFailed` وانقطاع `Social Overlay STOMP 4004: Inactive timeout` في عرض السجل وتقارير التشغيل: تشير إلى اتصال تلك الخدمات ولا تثبت انهيار البرنامج أو تحدد سبب خروجه.
-- توضيح رسالة التعافي من خطأ عرض `React #424` دون افتراض نجاح كل وظائف الواجهة أو تفسير خروج لاحق.
-- التعرف على العلامات المرتبطة داخل السطر نفسه في معاينة stdout أو stderr، ومنع تكرار النصيحة في التقرير عند ورود التحذير في القناتين.
-- الحفاظ على رمز الخروج الفعلي، وتشخيص انقطاع الإشراف، والسجلات الأصلية كاملة عند النسخ والتصدير. لا تُعدّل السجلات التاريخية أو الحسابات أو خيارات التشغيل.
+- إصلاح تعطل xrevive 0.1.22 عند بدء التشغيل بالرمز 101 ورسالة Tauri `unknown path`: كانت إعدادات XDG المعزولة تفتقد تعريف مجلدات المستخدم القياسية.
+- إنشاء تعريفات خاصة لكل حساب للمستندات والتنزيلات وبقية مجلدات XDG القياسية داخل بيانات الحساب الافتراضية، دون نسخ الملفات الشخصية أو تغيير HOME أو بيانات تسجيل الدخول.
+- الحفاظ على ملفات `user-dirs.dirs` التي أنشأها المستخدم أو عدّلها وعلى مسارات الإعدادات والبيانات المخصصة. تُعاد مواءمة التعريفات التلقائية غير المعدّلة إذا انتقل جذر المكتبة عند الاستعادة.
+- توضيح رسالة Tauri المحددة في معاينة السجل وتقارير النسخ وتصدير TXT بالعربية والإنجليزية، دون تغيير رمز الخروج أو السجلات الأصلية.
 
-**الحدود:** لا يغيّر هذا الإصدار برنامج Epic أو يعالج خدماته البعيدة. حالة الخروج القديمة المفقودة لا يمكن استرجاعها من هذه السجلات، والتحذيرات وحدها لا تثبت التعطل. التشخيص يقرأ المعاينة المحدودة فقط؛ النسخ والتصدير يحفظان المخرجات كاملة. لا تُغيّر إعدادات الشبكة أو TLS أو التصيير أو العزل تلقائيًا.
+**الحدود:** جرى التحقق من ظهور نافذة xrevive الحقيقي في مكتبة اختبار مستقلة، وليس تسجيل الدخول أو تشغيل الألعاب. لا يغيّر الإصدار ملفات xrevive ولا يصلح كل خطأ `unknown path` محتمل. قد تتطلب ملفات التعريف أو المسارات المخصصة مراجعة يدوية؛ لا تُكتب فوقها الإعدادات الافتراضية.
 
 ## English
 
-- Explain `Telemetry ConnectionFailed` and `Social Overlay STOMP 4004: Inactive timeout` in log previews and launch reports: these indicate connectivity issues in those services, not proof of an application crash or its exit cause.
-- Explain recovered `React #424` rendering errors without claiming every interface feature works or diagnosing a later exit.
-- Require related markers on the same line in either stdout or stderr previews; deduplicate report advice when both channels contain the warning.
-- Preserve genuine exit status, interrupted-supervisor diagnostics and complete original streams in copy/export. Historical records, profiles and launch arguments are not modified.
+- Fix xrevive 0.1.22 exiting at startup with code 101 and Tauri `unknown path`: isolated XDG configuration lacked standard user-folder definitions.
+- Supply private per-profile Documents, Downloads and other standard XDG folders within default profile data, without copying personal files or changing HOME or credentials.
+- Preserve user-created/edited `user-dirs.dirs` files and custom config/data paths. Untouched generated definitions are relocated when a restored library moves.
+- Explain the exact Tauri setup signature in bilingual log previews, copied reports and TXT exports without altering genuine exit status or original output.
 
-**Limitations:** this does not modify Epic or repair its remote services. Old missing exit codes cannot be recovered from these logs; warnings alone do not establish a crash. Advice examines bounded previews only, while copy/export retains complete output. Network, TLS, rendering and sandbox settings are not changed automatically.
+**Limitations:** the real xrevive window was verified in a disposable library, not authentication or gameplay. This does not modify xrevive or fix every possible `unknown path` failure. Existing custom definitions/paths may need manual review; defaults do not overwrite them.
 
 ## Packages and verification / الحزم والتحقق
 

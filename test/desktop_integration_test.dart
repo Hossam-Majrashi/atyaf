@@ -531,6 +531,39 @@ void main() {
     },
   );
 
+  test('Tauri path advice preserves genuine failure and complete original reports', () async {
+    const profile = Profile(id: 'tauri', applicationId: 'app', name: 'xrevive');
+    repository.saveProfile(profile);
+    const failure =
+        'Failed to setup app: error encountered during setup hook: unknown path\n';
+    final err = File('${runtime.profileRoot(profile.id)}/logs/err');
+    await err.parent.create(recursive: true);
+    final original = '$failure${'x' * (300 * 1024)}\ncomplete ending';
+    await err.writeAsString(original);
+    repository.recordLaunch({
+      'id': 'tauri',
+      'profileId': profile.id,
+      'pid': 18364,
+      'start': '2026-10-22T23:08:49',
+      'stop': '2026-10-22T23:08:50',
+      'exitCode': 101,
+      'crashed': true,
+      'stderr': err.path,
+    });
+    final record = repository.history(profile.id).single;
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      final sections = await launchReport(l, library, profile, record);
+      final report = await library.logs.completeReport(sections);
+      expect(report, contains(l.tauriUnknownPathAdvice));
+      expect(report, contains(original));
+      final destination = '${temporary.path}/tauri-${l.localeName}.txt';
+      await library.logs.exportReport(sections, destination);
+      expect(await File(destination).readAsString(), report);
+    }
+    expect(repository.history(profile.id).single, record);
+    expect(await err.readAsString(), original);
+  });
+
   test('shadPS4 CLI advice reads stdout and preserves complete original reports', () async {
     const profile = Profile(id: 'shad', applicationId: 'app', name: 'Shadps4');
     repository.saveProfile(profile);

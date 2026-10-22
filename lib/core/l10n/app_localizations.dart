@@ -714,10 +714,16 @@ abstract class AppLocalizations {
   /// **'HOME path (empty keeps real HOME)'**
   String get homePath;
 
+  /// No description provided for @tauriUnknownPathAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Tauri could not resolve a path during startup. Missing XDG special-folder definitions can cause this (reproduced with xrevive 0.1.22). Atyaf now supplies private Documents, Downloads and other standard folders for default managed config/data paths. Restart with the updated Atyaf; existing user-dirs.dirs files and custom config/data settings are preserved and may require manual review. This message alone does not identify every unknown-path failure.'**
+  String get tauriUnknownPathAdvice;
+
   /// No description provided for @profileHelp.
   ///
   /// In en, this message translates to:
-  /// **'XDG paths are isolated by default; HOME is not changed. Use application-specific flags for apps that ignore XDG. Arguments and environment values can use \'{config}\', \'{data}\', \'{cache}\', \'{state}\', \'{temp}\', \'{home}\' and \'{profile}\'. This is not a security sandbox.'**
+  /// **'XDG paths are isolated by default; HOME is not changed. Default managed profiles receive private standard user folders without copying personal files; custom config/data paths and existing user-dirs.dirs files are preserved. Use application-specific flags for apps that ignore XDG. Arguments and environment values can use \'{config}\', \'{data}\', \'{cache}\', \'{state}\', \'{temp}\', \'{home}\' and \'{profile}\'. This is not a security sandbox.'**
   String get profileHelp;
 
   /// No description provided for @windowControlsHelp.

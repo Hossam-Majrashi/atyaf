@@ -8,6 +8,7 @@ import '../../shared/services/runtime_service.dart';
 import 'linux_commands.dart';
 import 'linux_desktop_handlers.dart';
 import 'linux_window_preferences.dart';
+import 'linux_user_directories.dart';
 
 class LinuxRuntime implements RuntimeService {
   LinuxRuntime({Map<String, String>? environment})
@@ -211,6 +212,16 @@ finally:
     }
     if (profile.paths['home']?.isNotEmpty == true) {
       await Directory(values['HOME']!).create(recursive: true);
+    }
+    if (![
+          'config',
+          'data',
+        ].any((key) => profile.paths[key]?.isNotEmpty == true) &&
+        ![
+          'XDG_CONFIG_HOME',
+          'XDG_DATA_HOME',
+        ].any(profile.environment.containsKey)) {
+      await LinuxUserDirectories.prepare(root, profileRoot(profile.id));
     }
     await desktopHandlers(profile).prepare();
     if (inheritsWindowPreferences(profile) &&

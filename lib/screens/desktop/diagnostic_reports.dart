@@ -45,6 +45,11 @@ List<String> logAdvice(AppLocalizations l, String output) => [
     caseSensitive: false,
   ).hasMatch(output))
     l.recoveredUiAdvice,
+  if (RegExp(
+    r'^Failed to setup app: error encountered during setup hook: unknown path\s*$',
+    multiLine: true,
+  ).hasMatch(output))
+    l.tauriUnknownPathAdvice,
   if (output.contains('shadPS4 Emulator CLI') &&
       output.contains('Usage:') &&
       output.contains('--big-picture'))

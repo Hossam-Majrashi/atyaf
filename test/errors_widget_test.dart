@@ -225,7 +225,7 @@ void main() {
       const Size(1600, 900),
     ]) {
       testWidgets(
-        'Connection warnings $language $size retain interrupted status and raw output',
+        'Connection and Tauri advice $language $size retain interrupted status and raw output',
         (tester) async {
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1;
@@ -234,7 +234,9 @@ void main() {
           final l = lookupAppLocalizations(Locale(language));
           const output =
               '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n';
-          const error = '[Social Overlay] STOMP error 4004: Inactive timeout\n';
+          const error =
+              '[Social Overlay] STOMP error 4004: Inactive timeout\n'
+              'Failed to setup app: error encountered during setup hook: unknown path\n';
           await tester.runAsync(() async {
             final root = library.runtime.profileRoot('profile');
             await File('$root/logs/stdout').writeAsString(output);
@@ -273,6 +275,7 @@ void main() {
           expect(find.text(l.lostExitAdvice), findsOneWidget);
           expect(find.text(l.recoveredUiAdvice), findsOneWidget);
           expect(find.text(l.serviceConnectionAdvice), findsNWidgets(2));
+          expect(find.text(l.tauriUnknownPathAdvice), findsOneWidget);
           expect(find.text(output), findsOneWidget);
           expect(find.text(error), findsOneWidget);
           expect(repository.history('profile').single, original);
