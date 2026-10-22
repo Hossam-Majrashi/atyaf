@@ -274,6 +274,10 @@ LinuxRuntime now prepares profile-local Documents, Downloads and six other stand
 
 All 280 local serial Flutter tests, analysis and source-contract checks pass; native x86_64 and Flatpak scripts returned 0. All seven local `dist/atyaf-1.2.6-linux-x86_64.*` files and SHA256SUMS pass the real package/ELF/zsync/Flatpak validator. A disposable-library release smoke observed the real xrevive window after twelve seconds, no panic and no visible Atyaf fallback, then deliberately terminated that test process and verified persisted exit -15/complete streams. Without the folder definitions, the control exits 101. Source bytes/mode are unchanged. First-approval/hidden-supervision release smokes also pass. Authentication, gameplay and ARM64 graphical runtime are not claimed; hosted dual-architecture publication requires separate verification. The existing user's xrevive profile received only missing empty private folders/default definitions under the library lock, with all application/profile payloads unchanged. Installed Atyaf binaries remain untouched.
 
+### Published verification — v1.2.6
+
+All four jobs in https://github.com/Hossam-Majrashi/atyaf/actions/runs/39850228640 succeeded for source `cd141aee76d0552b4e8d6780feabd05da40eaa76`, including native x86_64/AArch64 packages and Flatpak, analysis/tests and joint publication. The v1.2.6 tag targets that exact source; https://github.com/Hossam-Majrashi/atyaf/releases/tag/v1.2.6 is public with fifteen assets. All public downloads in `dist/github-v1.2.6` match GitHub SHA256 digests and the fourteen-entry published manifest; both architecture sets independently pass the full local package/ELF/zsync/Flatpak validator. No ARM64 code was executed or installed. Prior releases, user account payloads and installed binaries remain preserved. The local xrevive fix and disposable-library smoke limits are documented above; credentials/private data were not uploaded.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
