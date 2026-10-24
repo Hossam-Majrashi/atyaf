@@ -384,4 +384,8 @@ All fifteen public downloads were saved without authentication into `dist/github
 
 The workflow used its temporary GitHub token; local Git publication used configured credentials, and release metadata/download verification used public unauthenticated requests. No personal token or private user library/profile/credential/build output was committed or uploaded. Existing installed executables, user data and old distribution outputs remain unchanged. The personal credential exposed in chat should be revoked. This verified publication supersedes the earlier source-only status.
 
+## v1.2.7 release-description correction
+
+Removed the accidentally retained 1.2.6 section from RELEASE_NOTES.md and patched only the existing v1.2.7 GitHub release body to match. Public read-back confirms the corrected body, all fifteen asset IDs/sizes/digests unchanged, the original source tag/target unchanged and the separate v1.2.6 release body/assets untouched. No package rebuild, retag, application/runtime change, installation or user-data operation was needed. The correction used the configured local credential provider in memory; no credential was written to source or command arguments.
+
 See DESIGN_DECISIONS.md for the pre-interface design decisions and BUILD_NOTES.md for architecture requirements and verified outputs.
