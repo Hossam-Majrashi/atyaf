@@ -667,7 +667,7 @@ void main() {
   test('Running profiles block replacement under the launch lock without implicit force kill', () async {
     final app = await initial();
     final binary = File(app.executable);
-    await binary.writeAsString('#!/bin/sh\nsleep 30\n');
+    await binary.writeAsString('#!/bin/sh\nexec sleep 30\n');
     final review = await runtime.inspect(app.executable);
     final profile = Profile(
       id: 'running',
@@ -687,6 +687,9 @@ void main() {
     expect(processes.isRunning(profile.id), isTrue);
     expect(await binary.readAsString(), contains('sleep 30'));
     await processes.stop(profile.id);
+    // Replacement is safe only after both inherited output streams are closed.
+    await processes.waitForPendingExits(timeout: null);
+    expect(processes.isRunning(profile.id), isFalse);
     final updated = await updates.update(app, staged, 'bin/studio');
     await expectVersion(updated, 'new');
     await storage.discard(staged);

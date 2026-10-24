@@ -278,6 +278,14 @@ All 280 local serial Flutter tests, analysis and source-contract checks pass; na
 
 All four jobs in https://github.com/Hossam-Majrashi/atyaf/actions/runs/39850228640 succeeded for source `cd141aee76d0552b4e8d6780feabd05da40eaa76`, including native x86_64/AArch64 packages and Flatpak, analysis/tests and joint publication. The v1.2.6 tag targets that exact source; https://github.com/Hossam-Majrashi/atyaf/releases/tag/v1.2.6 is public with fifteen assets. All public downloads in `dist/github-v1.2.6` match GitHub SHA256 digests and the fourteen-entry published manifest; both architecture sets independently pass the full local package/ELF/zsync/Flatpak validator. No ARM64 code was executed or installed. Prior releases, user account payloads and installed binaries remain preserved. The local xrevive fix and disposable-library smoke limits are documented above; credentials/private data were not uploaded.
 
+## Internal-update supervision and lock wait — 1.2.7 source update
+
+Version 1.2.7+10 passes clean analysis, all 293 serial Flutter tests, normalized localization/source-contract, formatting, shell syntax and diff checks. Native x86_64 release compilation returned 0; bundle is `build/linux/x64/release/bundle/atyaf` with adjacent `lib` and `data`. The disposable-library native smoke verifies visible first-approval/no execution followed by a hidden approved launch with complete stdout/stderr, exit 0 and no application errors. No installed executable, user library/profile/credential, old package or historical diagnostic was replaced.
+
+The Linux lock tests use an independent Python process with real POSIX fcntl record locks, not flock/mocked contention. They check bounded asynchronous errno-11 waiting, cleanup and process-local connection/alias coordination. The self-updater fixture actually replaces its executable and starts a child retaining both streams: the original parent's exit 0 remains distinct from the child's exit 7, and changed bytes require fresh approval. PID/boot/start-verified supervisor ownership keeps the lifecycle reserved until complete output persistence, with bilingual pending-state desktop controls and update/heap diagnostic advice. Independent detached processes remain outside tracking; no final Epic exit or heap-corruption repair is inferred.
+
+This session builds the native release bundle only, not new dist/Flatpak packages or an ARM64 binary. Source push is separate from release/tag publication; do not infer hosted builds or downloadable 1.2.7 assets from the version number. Existing 1.2.6 release packages are preserved. No personal token or private user data is included in Git.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building

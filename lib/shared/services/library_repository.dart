@@ -1,5 +1,12 @@
 import '../models/library_models.dart';
 
+/// Expected contention, not a filesystem or SQLite failure.
+class LibraryBusy extends StateError {
+  LibraryBusy() : super('Library lock wait timed out');
+  @override
+  String toString() => 'LibraryBusy: $message';
+}
+
 abstract interface class LibraryRepository {
   List<Application> get applications;
   List<Profile> get profiles;

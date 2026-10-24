@@ -15,6 +15,8 @@ List<ReportSection> applicationErrorReport(
     l.diagnosticDetails,
     text: error['detail'] as String? ?? l.unavailable,
   ),
+  if ((error['detail'] as String? ?? '').startsWith('LibraryBusy:'))
+    ReportSection(l.launchAdvice, text: l.libraryBusyAdvice),
   ReportSection(l.stackTrace, text: error['stack'] as String? ?? l.unavailable),
 ];
 
@@ -30,6 +32,16 @@ Map<String, dynamic> crashRecord(
 }
 
 List<String> logAdvice(AppLocalizations l, String output) => [
+  if (RegExp(
+    r'^[^\r\n]*\bSelfUpdate\.Completed\b[^\r\n]*\bresult="success"',
+    multiLine: true,
+  ).hasMatch(output))
+    l.selfUpdateAdvice,
+  if (RegExp(
+    r'^\s*(?:\*\*\*[^\r\n]*?:\s*)?corrupted double-linked list\s*(?:\*\*\*)?\s*$',
+    multiLine: true,
+  ).hasMatch(output))
+    l.heapCorruptionAdvice,
   // Match related markers on one log line, not unrelated words elsewhere in
   // a long preview. These warnings describe subsystems, never an exit status.
   if (RegExp(

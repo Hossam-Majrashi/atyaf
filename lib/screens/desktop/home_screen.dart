@@ -6,6 +6,7 @@ import '../../core/l10n/app_localizations.dart';
 import '../../features/home/services/library_controller.dart';
 import '../../shared/services/managed_storage_service.dart';
 import '../../shared/services/process_service.dart';
+import '../../shared/services/library_repository.dart';
 import '../../features/updates/services/update_service.dart';
 import '../../features/settings/services/preferences_service.dart';
 import '../../shared/models/library_models.dart';
@@ -60,6 +61,14 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await operation();
       library.refresh();
+    } on LibraryBusy {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).libraryBusyAdvice),
+          ),
+        );
+      }
     } on ProfileAlreadyRunning {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -528,6 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget profileCard(Profile profile, AppLocalizations l) {
     final running = library.processes.isRunning(profile.id);
+    final pending = running && library.processes.pidFor(profile.id) == null;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -596,7 +606,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       value: 'removeShortcut',
                       child: Text(l.removeShortcut),
                     ),
-                    if (running)
+                    if (running && !pending)
                       PopupMenuItem(value: 'force', child: Text(l.forceKill)),
                     if (!running)
                       PopupMenuItem(value: 'delete', child: Text(l.delete)),
@@ -606,7 +616,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              running ? l.running : l.stopped,
+              pending
+                  ? l.supervisionPending
+                  : (running ? l.running : l.stopped),
               style: TextStyle(
                 color: running ? Theme.of(context).colorScheme.primary : null,
               ),
@@ -617,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> {
               runSpacing: 12,
               children: [
                 FilledButton.icon(
-                  onPressed: busy
+                  onPressed: busy || pending
                       ? null
                       : () => perform(
                           () => running
@@ -644,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.terminal_rounded),
                     label: Text(l.terminalCommand),
                   ),
-                if (running)
+                if (running && !pending)
                   OutlinedButton.icon(
                     onPressed: busy
                         ? null

@@ -166,6 +166,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get launchAdvice => 'Launch diagnostics and suggestions';
 
   @override
+  String get libraryBusyAdvice =>
+      'The library is busy in another operation or Atyaf instance. Atyaf waited briefly for its lock; no launch was retried automatically. Wait for the operation to finish, then try again. Do not delete the lock file or stop a running update.';
+
+  @override
+  String get selfUpdateAdvice =>
+      'The application reports a successful internal update. It may replace its executable and relaunch: the original PID or its exit status does not describe the final relaunched instance. Atyaf keeps inherited output streams open, but independently detached processes are not tracked. Review the changed executable on the next launch; approval is never renewed automatically. This message does not recover a missing exit status or establish the cause of a later failure.';
+
+  @override
+  String get heapCorruptionAdvice =>
+      'The native allocator reported corrupted double-linked list (heap corruption). This is distinct from a recovered React warning. The line alone does not identify the affected updater/helper/main process or prove the final instance crashed. Check subsequent output, the actual exit status and any matching system crash report; Atyaf does not patch the application or add unsafe launch flags.';
+
+  @override
   String get serviceConnectionAdvice =>
       'Telemetry ConnectionFailed or Social Overlay STOMP 4004 (Inactive timeout) indicates a connection problem in those services, not proof that the application crashed. If the problem persists, check network access and the service status. These messages alone do not establish the cause or exit status; Atyaf does not change network, TLS or account settings.';
 
@@ -218,6 +230,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get supervisionPending =>
+      'Supervising output / relaunch — original process ended. Waiting for inherited streams; no verified PID to stop.';
 
   @override
   String get outputStreamsPending =>

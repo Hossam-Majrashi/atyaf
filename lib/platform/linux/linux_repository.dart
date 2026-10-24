@@ -9,7 +9,8 @@ import '../../shared/models/library_models.dart';
 import '../../shared/services/library_repository.dart';
 
 class LinuxRepository implements LibraryRepository {
-  LinuxRepository(this.path) : db = openDatabase(path) {
+  LinuxRepository(this.path, {this.lockTimeout = const Duration(seconds: 10)})
+    : db = openDatabase(path) {
     db.execute('PRAGMA journal_mode=WAL');
     db.execute('PRAGMA busy_timeout=5000');
     for (final table in ['applications', 'profiles', 'launches', 'errors']) {
@@ -31,7 +32,11 @@ class LinuxRepository implements LibraryRepository {
 
   final Database db;
   final String path;
+  final Duration lockTimeout;
   bool locked = false;
+  // POSIX record locks are process-scoped. Coordinate repository connections
+  // in this isolate too; a second descriptor must not unlock the first one.
+  static final Set<String> _lockedPaths = {};
   (int, int)? _libraryVersion;
   List<Application>? _applications;
   List<Profile>? _profiles;
@@ -53,23 +58,50 @@ class LinuxRepository implements LibraryRepository {
 
   @override
   Future<T> withExclusiveLock<T>(Future<T> Function() operation) async {
-    if (locked) {
-      throw StateError('Library is busy');
-    }
+    // Reject re-entry rather than deadlocking an operation awaiting itself.
+    if (locked) throw LibraryBusy();
     locked = true;
+    final deadline = Stopwatch()..start();
     RandomAccessFile? handle;
+    String? ownedPath;
     bool acquired = false;
+    Future<void> pause() async {
+      if (deadline.elapsed >= lockTimeout) throw LibraryBusy();
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+    }
+
     try {
-      handle = await File('$path.lock').open(mode: FileMode.append);
-      await handle.lock(FileLock.exclusive);
-      acquired = true;
+      final key = await File(path).resolveSymbolicLinks();
+      while (!_lockedPaths.add(key)) {
+        await pause();
+      }
+      ownedPath = key;
+      handle = await File('$key.lock').open(mode: FileMode.append);
+      while (true) {
+        try {
+          // Dart's exclusive lock is nonblocking on Linux. Keep the event loop
+          // free to persist streams/exit status while another supervisor works.
+          await handle.lock(FileLock.exclusive);
+          acquired = true;
+          break;
+        } on FileSystemException catch (error) {
+          if (error.osError?.errorCode != 11) rethrow;
+          await pause();
+        }
+      }
+      // Only acquisition is retried, never the operation or a launched program.
       return await operation();
     } finally {
-      if (acquired) {
-        await handle!.unlock();
+      try {
+        if (acquired) await handle!.unlock();
+      } finally {
+        try {
+          await handle?.close();
+        } finally {
+          if (ownedPath != null) _lockedPaths.remove(ownedPath);
+          locked = false;
+        }
       }
-      await handle?.close();
-      locked = false;
     }
   }
 

@@ -11,6 +11,8 @@ class ProcessJournal {
     required String stdoutPath,
     required String stderrPath,
     String? executable,
+    int? supervisorPid,
+    String? supervisorIdentity,
   }) {
     repository.recordLaunch({
       'id': id,
@@ -24,6 +26,11 @@ class ProcessJournal {
       'stdout': stdoutPath,
       'stderr': stderrPath,
       'executable': executable,
+      if (supervisorPid != null && supervisorIdentity != null) ...{
+        'supervisorPid': supervisorPid,
+        'supervisorIdentity': supervisorIdentity,
+        'supervisionPending': true,
+      },
     });
   }
 
@@ -33,6 +40,7 @@ class ProcessJournal {
       'exitCode': code,
       'crashed': ![0, -15, -9, 143, 137].contains(code),
       'interrupted': false,
+      'supervisionPending': false,
       // A genuine final failure is new even if an earlier interruption was cleared.
       'diagnosticsDismissed': false,
     });
@@ -42,6 +50,7 @@ class ProcessJournal {
     repository.updateLaunch(id, {
       'stop': DateTime.now().toIso8601String(),
       'interrupted': true,
+      'supervisionPending': false,
     });
   }
 }

@@ -88,8 +88,18 @@ class LinuxProcesses implements ProcessService, ProfileWindowService {
     );
   }
 
+  bool ownsPendingStreams(Map<String, dynamic> record) =>
+      record['supervisionPending'] == true &&
+      record['supervisorPid'] is int &&
+      record['supervisorIdentity'] is String &&
+      identity(record['supervisorPid'] as int) == record['supervisorIdentity'];
+
+  bool supervisionPending(String profileId) =>
+      repository.history(profileId).any(ownsPendingStreams);
+
   @override
-  bool isRunning(String profileId) => active(profileId) != null;
+  bool isRunning(String profileId) =>
+      active(profileId) != null || supervisionPending(profileId);
   @override
   int? pidFor(String profileId) => active(profileId)?['pid'] as int?;
   @override
@@ -98,6 +108,7 @@ class LinuxProcesses implements ProcessService, ProfileWindowService {
       for (final r in repository.history(profile.id)) {
         if (r['stop'] == null &&
             !children.containsKey(profile.id) &&
+            !ownsPendingStreams(r) &&
             !matches(profile.id, r)) {
           journal.interrupted(r['id'] as String);
         }
@@ -134,10 +145,10 @@ class LinuxProcesses implements ProcessService, ProfileWindowService {
         .open(mode: FileMode.append);
     try {
       await lock.lock(FileLock.exclusive);
-      if (isRunning(profile.id)) {
+      if (active(profile.id) != null) {
         throw ProfileAlreadyRunning();
       }
-      if (children.containsKey(profile.id)) {
+      if (children.containsKey(profile.id) || supervisionPending(profile.id)) {
         throw OutputStreamsPending();
       }
       final workingDirectory = profile.workingDirectory.isEmpty
@@ -207,6 +218,8 @@ class LinuxProcesses implements ProcessService, ProfileWindowService {
         stdoutPath: outPath,
         stderrPath: errPath,
         executable: review.path,
+        supervisorPid: pid,
+        supervisorIdentity: identity(pid),
       );
       final windowBinding = windows?.update(
         profile.id,

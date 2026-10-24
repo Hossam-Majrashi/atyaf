@@ -1,3 +1,23 @@
+# Atyaf 1.2.7 — أطياف (source update / تحديث المصدر)
+
+## العربية
+
+- معالجة تنازع قفل المكتبة `errno 11` بانتظار غير حاجب حتى عشر ثوانٍ؛ لا تُعاد عملية تشغيل البرنامج، وتبقى الأخطاء الأخرى واضحة.
+- الحفاظ على حجز الحساب أثناء مخرجات إعادة التشغيل الداخلي، عبر التحقق من هوية مشرف أطياف، ومنع تشخيص انقطاع زائف أو تشغيل مكرر أو استبدال الملفات أثناء الانتظار.
+- عرض حالة الإشراف المعلق دون إتاحة إرسال إشارات إلى معرّف عملية قديم، مع توضيح نجاح التحديث الداخلي وتلف الذاكرة في التقارير بالعربية والإنجليزية.
+- الحفاظ على موافقة الملف التنفيذي: بعد تغيّر محتواه يلزم اعتماد صريح جديد، دون تغيير الحسابات أو بيانات الدخول أو السجلات السابقة.
+
+## English
+
+- Wait asynchronously up to ten seconds for library-lock contention (`errno 11`), without retrying a program launch or hiding other filesystem failures.
+- Verify the Atyaf supervisor identity while inherited relaunch output remains open. Keep the profile reserved against duplicate launch/update/deletion and avoid false interrupted-supervisor records.
+- Show pending supervision without offering signals to a stale PID; explain successful internal updates and native heap corruption in bilingual diagnostics/reports.
+- Preserve executable approval: changed content requires fresh explicit review, with no automatic profile, credential or historical-log changes.
+
+**Scope / الحدود:** supervision is not adoption of independently detached processes. Original-parent exit status is not the final relaunched instance's status. No live Epic repair, historical exit-code recovery, ARM64 runtime verification or published 1.2.7 packages is implied by this source update.
+
+---
+
 # Atyaf 1.2.6 — أطياف
 
 ## العربية

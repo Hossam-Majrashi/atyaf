@@ -302,7 +302,18 @@ void main() {
         expect(repository.history(profile.id).single['stop'], isNull);
         if (!stopRunning) {
           LinuxProcesses(runtime, repository).reconcile();
-          expect(repository.history(profile.id).single['interrupted'], isTrue);
+          expect(
+            repository.history(profile.id).single['interrupted'],
+            isNot(true),
+          );
+          expect(
+            LinuxProcesses(runtime, repository).isRunning(profile.id),
+            isTrue,
+          );
+          expect(
+            LinuxProcesses(runtime, repository).pidFor(profile.id),
+            isNull,
+          );
         }
         await expectLater(
           owner.waitForPendingExits(timeout: const Duration(milliseconds: 20)),
@@ -343,11 +354,15 @@ void main() {
       'profileId': 'x',
       'pid': pid,
       'identity': 'wrong-boot:wrong-start',
+      'supervisorPid': pid,
+      'supervisorIdentity': 'wrong-boot:wrong-start',
+      'supervisionPending': true,
       'stop': null,
     });
     expect(processes.isRunning('x'), isFalse);
     processes.reconcile();
     expect(repository.history('x').first['interrupted'], isTrue);
+    expect(repository.history('x').first['supervisionPending'], isFalse);
   });
 
   test('Desktop entry uses Atyaf profile ID, escaping and valid native desktop format', () async {

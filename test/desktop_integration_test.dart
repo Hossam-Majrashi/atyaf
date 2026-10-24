@@ -16,7 +16,10 @@ import 'package:atyaf/platform/linux/linux_repository.dart';
 import 'package:atyaf/platform/linux/linux_runtime.dart';
 import 'package:atyaf/screens/desktop/shortcut_launch.dart';
 import 'package:atyaf/shared/models/library_models.dart';
+import 'package:atyaf/shared/services/process_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/library_lock_holder.dart';
 
 class RecordingWindows extends LinuxProfileWindows {
   RecordingWindows(LinuxRuntime runtime) : super(runtime, 'unused');
@@ -419,6 +422,40 @@ void main() {
     },
   );
 
+  test('Self-update and heap advice require exact, same-line evidence', () {
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      expect(
+        logAdvice(
+          l,
+          '[app] SelfUpdate.Completed result="success" version="new"',
+        ),
+        [l.selfUpdateAdvice],
+      );
+      expect(logAdvice(l, 'corrupted double-linked list\n'), [
+        l.heapCorruptionAdvice,
+      ]);
+      for (final output in [
+        'SelfUpdate.Completed result="failed"',
+        'SelfUpdate.Completed\nresult="success"',
+        'SelfUpdate.CompletedElsewhere result="success"',
+        'SelfUpdate.Apply result="success"',
+        'corrupted double-linked list example in documentation',
+        'corrupted\ndouble-linked list',
+      ]) {
+        expect(logAdvice(l, output), isEmpty, reason: output);
+      }
+      final sections = applicationErrorReport(l, {
+        'detail': 'LibraryBusy: Library lock wait timed out',
+        'stack': 'original stack',
+      });
+      expect(
+        sections.where((s) => s.title == l.launchAdvice).single.text,
+        l.libraryBusyAdvice,
+      );
+      expect(sections.last.text, 'original stack');
+    }
+  });
+
   test('Interrupted connection-warning reports deduplicate advice and preserve history and full streams', () async {
     const profile = Profile(
       id: 'connection',
@@ -427,7 +464,8 @@ void main() {
     );
     repository.saveProfile(profile);
     const warnings =
-        '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n';
+        '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n'
+        'SelfUpdate.Completed result="success"\ncorrupted double-linked list\n';
     final original = '$warnings${'x' * (300 * 1024)}\ncomplete ending العربية';
     final directory = Directory('${runtime.profileRoot(profile.id)}/logs');
     await directory.create(recursive: true);
@@ -457,6 +495,8 @@ void main() {
         advice,
         [
           l.lostExitAdvice,
+          l.selfUpdateAdvice,
+          l.heapCorruptionAdvice,
           l.serviceConnectionAdvice,
           l.recoveredUiAdvice,
         ].join('\n\n'),
@@ -530,6 +570,77 @@ void main() {
       expect(repository.errors, isEmpty);
     },
   );
+
+  test('Locked shortcut waits once, captures self-update relaunch output and requires new approval', () async {
+    final executable = File('${temporary.path}/managed AppImage fixture');
+    const replacement =
+        '#!/usr/bin/python3\nimport sys,time\n'
+        'time.sleep(0.6)\n'
+        'print(\'SelfUpdate.Completed result="success"\',flush=True)\n'
+        'print("relaunched stdout النهاية",flush=True)\n'
+        'print("relaunched stderr النهاية",file=sys.stderr,flush=True)\n'
+        'sys.exit(7)\n';
+    await executable.writeAsString(
+      '#!/usr/bin/python3\nimport os,subprocess,sys\n'
+      'target=sys.argv[0]\n'
+      'with open(target+".new","w") as f: f.write(${jsonEncode(replacement)})\n'
+      'os.chmod(target+".new",0o700)\n'
+      'os.replace(target+".new",target)\n'
+      'print("SelfUpdate.Apply succeeded",flush=True)\n'
+      'subprocess.Popen([target])\n',
+    );
+    await Process.run('/usr/bin/chmod', ['700', executable.path]);
+    final app = Application(
+      id: 'updater',
+      name: 'Updater',
+      executable: executable.path,
+    );
+    final review = await runtime.inspect(app.executable);
+    final profile = Profile(
+      id: 'updater',
+      applicationId: app.id,
+      name: 'Updater',
+      trustedFingerprint: review.fingerprint,
+    );
+    repository.saveApplication(app);
+    repository.saveProfile(profile);
+    final holder = await holdLock('${repository.path}.lock');
+    final shortcut = launchDesktopShortcut(library, profile.id);
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(repository.history(profile.id), isEmpty);
+    } finally {
+      await releaseLock(holder);
+    }
+    expect(await shortcut, isTrue);
+    final record = repository.history(profile.id).single;
+    // This is the genuine original parent's exit, NOT the relaunched child's 7.
+    expect(record['exitCode'], 0);
+    expect(record['interrupted'], isFalse);
+    expect(
+      await File(record['stdout'] as String).readAsString(),
+      contains('relaunched stdout النهاية'),
+    );
+    expect(
+      await File(record['stderr'] as String).readAsString(),
+      contains('relaunched stderr النهاية'),
+    );
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      final report = await library.logs.completeReport(
+        await launchReport(l, library, profile, record),
+      );
+      expect(report, contains(l.selfUpdateAdvice));
+    }
+    expect(
+      (await runtime.inspect(app.executable)).fingerprint,
+      isNot(review.fingerprint),
+    );
+    expect(await launchDesktopShortcut(library, profile.id), isFalse);
+    expect(repository.history(profile.id), hasLength(1));
+    expect(repository.profiles.single.toJson(), profile.toJson());
+    expect(repository.applications.single.toJson(), app.toJson());
+    expect(repository.errors, isEmpty);
+  });
 
   test('Tauri path advice preserves genuine failure and complete original reports', () async {
     const profile = Profile(id: 'tauri', applicationId: 'app', name: 'xrevive');
@@ -1065,15 +1176,29 @@ os._exit(0)
       // Wait for the actual parent exit, while its helper retains both pipes.
       for (var attempt = 0; attempt < 200; attempt++) {
         if (repository.history(profile.id).isNotEmpty &&
-            !library.processes.isRunning(profile.id)) {
+            library.processes.pidFor(profile.id) == null) {
           break;
         }
         await Future<void>.delayed(const Duration(milliseconds: 20));
       }
       expect(repository.history(profile.id), hasLength(1));
-      expect(library.processes.isRunning(profile.id), isFalse);
-      LinuxProcesses(runtime, repository).reconcile();
-      expect(repository.history(profile.id).single['interrupted'], isTrue);
+      expect(library.processes.isRunning(profile.id), isTrue);
+      final observer = LinuxProcesses(runtime, repository);
+      observer.reconcile();
+      expect(repository.history(profile.id).single['interrupted'], isNot(true));
+      expect(observer.isRunning(profile.id), isTrue);
+      expect(observer.pidFor(profile.id), isNull);
+      // Another shortcut must not start a new instance during the relaunch.
+      expect(await launchDesktopShortcut(library, profile.id), isTrue);
+      expect(repository.history(profile.id), hasLength(1));
+      await expectLater(
+        observer.launch(app, profile),
+        throwsA(isA<OutputStreamsPending>()),
+      );
+      await expectLater(library.deleteProfile(profile), throwsStateError);
+      expect(library.updates.isRunning(app), isTrue);
+      await observer.stop(profile.id, force: true); // No guessed child PID.
+      expect(observer.isRunning(profile.id), isTrue);
       await Future<void>.delayed(const Duration(seconds: 5, milliseconds: 200));
       expect(completed, isFalse);
       expect(await shortcut.timeout(const Duration(seconds: 5)), isTrue);

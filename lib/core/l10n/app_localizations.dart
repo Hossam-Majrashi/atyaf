@@ -330,6 +330,24 @@ abstract class AppLocalizations {
   /// **'Launch diagnostics and suggestions'**
   String get launchAdvice;
 
+  /// No description provided for @libraryBusyAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The library is busy in another operation or Atyaf instance. Atyaf waited briefly for its lock; no launch was retried automatically. Wait for the operation to finish, then try again. Do not delete the lock file or stop a running update.'**
+  String get libraryBusyAdvice;
+
+  /// No description provided for @selfUpdateAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The application reports a successful internal update. It may replace its executable and relaunch: the original PID or its exit status does not describe the final relaunched instance. Atyaf keeps inherited output streams open, but independently detached processes are not tracked. Review the changed executable on the next launch; approval is never renewed automatically. This message does not recover a missing exit status or establish the cause of a later failure.'**
+  String get selfUpdateAdvice;
+
+  /// No description provided for @heapCorruptionAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The native allocator reported corrupted double-linked list (heap corruption). This is distinct from a recovered React warning. The line alone does not identify the affected updater/helper/main process or prove the final instance crashed. Check subsequent output, the actual exit status and any matching system crash report; Atyaf does not patch the application or add unsafe launch flags.'**
+  String get heapCorruptionAdvice;
+
   /// No description provided for @serviceConnectionAdvice.
   ///
   /// In en, this message translates to:
@@ -419,6 +437,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
+
+  /// No description provided for @supervisionPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Supervising output / relaunch — original process ended. Waiting for inherited streams; no verified PID to stop.'**
+  String get supervisionPending;
 
   /// No description provided for @outputStreamsPending.
   ///

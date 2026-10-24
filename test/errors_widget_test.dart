@@ -225,7 +225,7 @@ void main() {
       const Size(1600, 900),
     ]) {
       testWidgets(
-        'Connection and Tauri advice $language $size retain interrupted status and raw output',
+        'Connection, update, heap and Tauri advice $language $size retain interrupted status and raw output',
         (tester) async {
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1;
@@ -233,10 +233,12 @@ void main() {
           addTearDown(tester.view.resetDevicePixelRatio);
           final l = lookupAppLocalizations(Locale(language));
           const output =
-              '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n';
+              '[telemetry] Io ConnectionFailed\nRecovered React hydration error #424\n'
+              'SelfUpdate.Completed result="success"\n';
           const error =
               '[Social Overlay] STOMP error 4004: Inactive timeout\n'
-              'Failed to setup app: error encountered during setup hook: unknown path\n';
+              'Failed to setup app: error encountered during setup hook: unknown path\n'
+              'corrupted double-linked list\n';
           await tester.runAsync(() async {
             final root = library.runtime.profileRoot('profile');
             await File('$root/logs/stdout').writeAsString(output);
@@ -276,9 +278,83 @@ void main() {
           expect(find.text(l.recoveredUiAdvice), findsOneWidget);
           expect(find.text(l.serviceConnectionAdvice), findsNWidgets(2));
           expect(find.text(l.tauriUnknownPathAdvice), findsOneWidget);
+          expect(find.text(l.selfUpdateAdvice), findsOneWidget);
+          expect(find.text(l.heapCorruptionAdvice), findsOneWidget);
           expect(find.text(output), findsOneWidget);
           expect(find.text(error), findsOneWidget);
           expect(repository.history('profile').single, original);
+          expect(tester.takeException(), isNull);
+        },
+      );
+      testWidgets(
+        'Pending supervision $language $size reserves profile without offering stale-PID signals',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          final l = lookupAppLocalizations(Locale(language));
+          repository.updateLaunch('failed', {
+            'stop': null,
+            'exitCode': null,
+            'crashed': false,
+            'supervisionPending': true,
+            'supervisorPid': pid,
+            'supervisorIdentity': LinuxProcesses.identity(pid),
+          });
+          SharedPreferences.setMockInitialValues({
+            'onboarding_done': true,
+            'language': language,
+          });
+          await tester.pumpWidget(
+            AtyafApp(
+              preferences: PreferencesService(
+                await SharedPreferences.getInstance(),
+              ),
+              library: library,
+              manageWindow: false,
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            find.text(l.supervisionPending),
+            100,
+            scrollable: find
+                .descendant(
+                  of: find.byKey(const ValueKey('app')),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          expect(find.text(l.supervisionPending), findsOneWidget);
+          final stop = find.widgetWithText(FilledButton, l.stop);
+          expect(stop, findsOneWidget);
+          expect(tester.widget<FilledButton>(stop).onPressed, isNull);
+          expect(find.widgetWithText(OutlinedButton, l.restart), findsNothing);
+          final menu = find.byType(PopupMenuButton<String>).last;
+          await tester.scrollUntilVisible(
+            menu.hitTestable(),
+            80,
+            scrollable: find
+                .descendant(
+                  of: find.byKey(const ValueKey('app')),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(menu.hitTestable());
+          await tester.pumpAndSettle();
+          expect(
+            find.widgetWithText(PopupMenuItem<String>, l.logs),
+            findsOneWidget,
+          );
+          expect(find.text(l.forceKill), findsNothing);
+          expect(find.text(l.delete), findsNothing);
+          expect(
+            repository.history('profile').single['interrupted'],
+            isNot(true),
+          );
           expect(tester.takeException(), isNull);
         },
       );

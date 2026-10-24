@@ -54,6 +54,12 @@
 - **نسخ احتياطي واستعادة:** تصدير المكتبة المُدارة واستعادتها، دون تضمين الملفات التنفيذية الخارجية أو بيانات المسارات المخصصة.
 - **مسارات مؤقتة قصيرة:** تجنّب حدود طول مسارات مقابس Unix في تطبيقات Electron وChromium، دون تعطيل آليات الحماية الخاصة بها.
 
+### التحديث الداخلي للبرامج
+
+عندما يحدّث برنامج مثل Epic نفسه ويعيد تشغيله، يبقي أطياف الحساب محجوزًا ما دامت تدفقات المخرجات مفتوحة ومشرفها موثّقًا بمعرّف العملية ووقت بدئها وإقلاع النظام. إذا انتهت العملية الأصلية يظهر «قيد الإشراف على المخرجات / إعادة التشغيل»؛ لا يُسجَّل انقطاع زائف ولا يُسمح بنسخة مكررة أو استبدال الملفات أو حذف الحساب أثناء الانتظار. لا تتوفر أزرار إيقاف أو إعادة تشغيل لعملية جديدة غير موثّقة. هذا تتبع للإشراف وليس ضمانًا أن النسخة الجديدة ما زالت تعمل: العمليات التي تنفصل وتغلق التدفقات خارج نطاقه، ورمز خروج العملية الأصلية لا يصف خروج النسخة المعاد تشغيلها. تغيّر محتوى الملف يتطلب موافقة جديدة عند التشغيل التالي؛ لا تتغير الحسابات أو بيانات الدخول تلقائيًا.
+
+ينتظر قفل المكتبة المشغول حتى عشر ثوانٍ دون حجب تسجيل المخرجات، ثم يعرض إشعارًا بدل فشل `errno 11` الفوري؛ لا تُعاد عملية التشغيل نفسها. لا تحذف ملف القفل ولا تقطع تحديثًا جاريًا. يميّز التشخيص نجاح `SelfUpdate.Completed` وتلف الذاكرة `corrupted double-linked list` عن تحذير React المتعافى؛ لا تُستعاد رموز خروج قديمة مفقودة.
+
 ### الاستخدام
 
 1. أضف البرنامج من ملف تنفيذي أو مجلد كامل أو أرشيف محمول. عند الاستيراد، اختر الملف التنفيذي الرئيسي صراحةً، ثم اختر الأيقونة من معرض الصور أو عبر زر «اختيار صورة من الجهاز» لتحديد ملف PNG أو صورة أخرى مباشرةً، أو اضغط «استخدام الأيقونة التلقائية». للملف المنفرد، يمكنك اختيار صورة أو مجلد صور آخر من المعرض. يتوفر البحث في مسارات الصور بالضغط على Enter، وتظهر جميع النتائج في شبكة واحدة بالتمرير مع تحميل المعاينات تلقائيًا؛ لا تُتبع المجلدات المرتبطة رمزيًا.
@@ -185,6 +191,12 @@ The screenshots are displayed in the Arabic section above:
 - **Logs and diagnostics:** Inspect launch history, output and errors, copy complete reports or export TXT. **Clear errors** in **Errors and diagnostics** confirms removal of previous diagnostics so you can monitor new errors, without deleting profile launch history or output files. Export Atyaf error reports first if needed. System crash details are available when `coredumpctl` and permissions allow access.
 - **Backup and restore:** Export and restore the managed library without including external executables or custom data paths.
 - **Short temporary paths:** Avoid Electron/Chromium Unix socket pathname limits without disabling their security mechanisms.
+
+### Application self-updates
+
+When an application such as Epic updates itself and relaunches, Atyaf reserves the profile while inherited output streams remain open and their supervisor's PID, boot ID and start ticks are verified. After the original process ends, the card shows **Supervising output / relaunch** rather than a false interruption. Duplicate launches, file replacement and profile deletion remain blocked; stop/restart controls are unavailable for an unverified replacement process. This tracks supervision, not proof that the replacement is still running: independently detached processes that close the streams are outside its scope, and the original parent's exit code does not describe the relaunched instance's exit. Changed executable content still requires explicit approval on the next launch; accounts and credentials are not changed automatically.
+
+A busy library lock waits asynchronously for up to ten seconds, keeping output persistence responsive, instead of failing immediately with `errno 11`. Only lock acquisition is retried, never the launch itself. Do not delete the lock file or interrupt an update. Diagnostics distinguish successful `SelfUpdate.Completed` and native `corrupted double-linked list` messages from recovered React warnings; old missing exit codes cannot be recovered.
 
 ### Usage
 
