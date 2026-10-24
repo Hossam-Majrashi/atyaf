@@ -1,4 +1,4 @@
-# Atyaf 1.2.7 — أطياف (source update / تحديث المصدر)
+# Atyaf 1.2.7 — أطياف
 
 ## العربية
 
@@ -14,7 +14,7 @@
 - Show pending supervision without offering signals to a stale PID; explain successful internal updates and native heap corruption in bilingual diagnostics/reports.
 - Preserve executable approval: changed content requires fresh explicit review, with no automatic profile, credential or historical-log changes.
 
-**Scope / الحدود:** supervision is not adoption of independently detached processes. Original-parent exit status is not the final relaunched instance's status. No live Epic repair, historical exit-code recovery, ARM64 runtime verification or published 1.2.7 packages is implied by this source update.
+**Scope / الحدود:** supervision is not adoption of independently detached processes. Original-parent exit status is not the final relaunched instance's status. No live Epic repair, historical exit-code recovery or ARM64 graphical runtime verification is claimed. Packages are published only after native builds on both architectures, analysis/tests and package validation succeed. / لا يُدّعى إصلاح Epic نفسه أو استعادة رموز خروج قديمة أو اختبار واجهة ARM64؛ لا تُنشر الحزم إلا بعد نجاح البناء الأصلي للمعماريتين والتحليل والاختبارات والتحقق من الحزم.
 
 ---
 
