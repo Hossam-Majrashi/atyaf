@@ -286,6 +286,12 @@ The Linux lock tests use an independent Python process with real POSIX fcntl rec
 
 This session builds the native release bundle only, not new dist/Flatpak packages or an ARM64 binary. Source push is separate from release/tag publication; do not infer hosted builds or downloadable 1.2.7 assets from the version number. Existing 1.2.6 release packages are preserved. No personal token or private user data is included in Git.
 
+### Published verification — v1.2.7
+
+The user-authorized tag v1.2.7 targets `b5662b3eb482c166b5bc06d73688dcaf5ec099a3`. All four jobs in https://github.com/Hossam-Majrashi/atyaf/actions/runs/40053293581 succeeded: analysis/tests, native x86_64 packages, native AArch64 packages and publication. Each native runner built and validated seven real outputs, including Flatpak; the final job validated all fourteen package/control files before publishing fifteen assets. https://github.com/Hossam-Majrashi/atyaf/releases/tag/v1.2.7 is public, non-draft/non-prerelease and latest, with its tag/target matching the exact built source. Older releases are preserved.
+
+All fifteen public files in `dist/github-v1.2.7` match GitHub SHA256 digests and all fourteen published checksum entries. Both architecture sets independently passed local ELF/package/metadata/zsync/Flatpak validation without installation or execution of ARM64 payloads. A new local full serial run passes all 293 tests, alongside clean analysis and source-contract/format/shell/diff checks; 60 affected desktop/lock tests also pass independently. No new ARM64 GUI smoke or live Epic repair is claimed. Release documentation is the only source change in the publication session. Installed binaries, user profiles/credentials and previous dist files remain unchanged; public verification requests carried no credentials, and local Git used the configured provider rather than a token in source/URLs.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
