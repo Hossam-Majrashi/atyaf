@@ -1,26 +1,26 @@
-# Atyaf 1.2.7 — أطياف
+# Atyaf 1.2.8 — أطياف
 
 ## العربية
 
-- معالجة تنازع قفل المكتبة `errno 11` بانتظار غير حاجب حتى عشر ثوانٍ؛ لا تُعاد عملية تشغيل البرنامج، وتبقى الأخطاء الأخرى واضحة.
-- الحفاظ على حجز الحساب أثناء مخرجات إعادة التشغيل الداخلي، عبر التحقق من هوية مشرف أطياف، ومنع تشخيص انقطاع زائف أو تشغيل مكرر أو استبدال الملفات أثناء الانتظار.
-- عرض حالة الإشراف المعلق دون إتاحة إرسال إشارات إلى معرّف عملية قديم، مع توضيح نجاح التحديث الداخلي وتلف الذاكرة في التقارير بالعربية والإنجليزية.
-- الحفاظ على موافقة الملف التنفيذي: بعد تغيّر محتواه يلزم اعتماد صريح جديد، دون تغيير الحسابات أو بيانات الدخول أو السجلات السابقة.
+- نقل المسارات المؤقتة الافتراضية إلى مجلدات خاصة وقصيرة تحت `/var/tmp` بدل `/tmp` لتجنب ضغط مساحة الملفات المؤقتة في الذاكرة وإعادة استخدام فك AppImage القديم غير المكتمل.
+- الحفاظ على فصل الحسابات وحدود طول مقابس Electron/Chromium والمسارات ومتغيرات `TMPDIR` المخصصة. لا تُحذف الملفات المؤقتة القديمة أو بيانات الحسابات تلقائيًا.
+- توضيح نفاد المساحة أو عُقد الملفات أثناء فك AppImage، والتمييز بين غياب بيانات `.desktop` المضمّنة وغياب اختصار سطح المكتب، في الواجهة والتقارير العربية والإنجليزية.
+- الحفاظ على المخرجات الكاملة ورموز الخروج السابقة والموافقة على الملفات التنفيذية دون تعديل بيانات الدخول أو إضافة خيارات تعطّل الحماية.
 
 ## English
 
-- Wait asynchronously up to ten seconds for library-lock contention (`errno 11`), without retrying a program launch or hiding other filesystem failures.
-- Verify the Atyaf supervisor identity while inherited relaunch output remains open. Keep the profile reserved against duplicate launch/update/deletion and avoid false interrupted-supervisor records.
-- Show pending supervision without offering signals to a stale PID; explain successful internal updates and native heap corruption in bilingual diagnostics/reports.
-- Preserve executable approval: changed content requires fresh explicit review, with no automatic profile, credential or historical-log changes.
+- Move default temporary storage from `/tmp` to short, private per-profile `/var/tmp` directories, avoiding pressure on memory-backed temporary filesystems and reuse of old incomplete AppImage extraction trees.
+- Preserve profile isolation, Electron/Chromium Unix socket limits, custom paths and explicit `TMPDIR` overrides. Old temporary contents and account data are not automatically deleted.
+- Explain extraction space/inode exhaustion and distinguish missing embedded `.desktop` metadata from a missing desktop shortcut in bilingual desktop diagnostics and complete reports.
+- Preserve complete output, genuine exit status and executable approval without changing credentials or adding security-bypass flags.
 
-**Scope / الحدود:** supervision is not adoption of independently detached processes. Original-parent exit status is not the final relaunched instance's status. No live Epic repair, historical exit-code recovery or ARM64 graphical runtime verification is claimed. Packages are published only after native builds on both architectures, analysis/tests and package validation succeed. / لا يُدّعى إصلاح Epic نفسه أو استعادة رموز خروج قديمة أو اختبار واجهة ARM64؛ لا تُنشر الحزم إلا بعد نجاح البناء الأصلي للمعماريتين والتحليل والاختبارات والتحقق من الحزم.
+**Scope / الحدود:** `/var/tmp` can also fill up or use a separately configured filesystem; inspect free space and inodes on the actual `TMPDIR` filesystem. Existing custom paths require explicit review. Studio's historical exit code 2 with empty streams does not establish a cause, and no historical status is reconstructed. / قد تمتلئ `/var/tmp` أيضًا؛ افحص المساحة وعُقد الملفات على نظام ملفات `TMPDIR` الفعلي. لا يكفي رمز خروج Studio القديم مع غياب المخرجات لتحديد السبب، ولا تُستعاد رموز خروج مجهولة.
 
 ## Packages and verification / الحزم والتحقق
 
 Runtime requirements: GTK3, SQLite, Python 3, XDG tools and a working file-chooser portal. Flatpak uses GNOME 50. Optional AppImage icon reading uses host 7-Zip; DwarFS is unsupported by the icon reader, not prohibited from launching.
 
-Supported package architectures are **x86_64** and **aarch64**; `armv7`/`i686` are unsupported by this Flutter Linux toolchain. Native packages must be built and validated on their actual architecture; local x86_64 output is not evidence of an ARM64 build or GitHub publication.
+Supported package architectures are **x86_64** and **aarch64**; `armv7`/`i686` are unsupported by this Flutter Linux toolchain. Packages are published only after analysis/tests, actual native builds on both architectures and package validation succeed. No ARM64 graphical runtime verification is implied.
 
 Download `SHA256SUMS` beside the release assets you need, then run:
 

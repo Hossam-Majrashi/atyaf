@@ -32,6 +32,17 @@ Map<String, dynamic> crashRecord(
 }
 
 List<String> logAdvice(AppLocalizations l, String output) => [
+  if (output.contains(
+        'Write on output file failed because No space left on device',
+      ) &&
+      (output.contains('Parallel unsquashfs:') ||
+          output.contains('FATAL ERROR: writer: failed to write file')))
+    l.appImageSpaceAdvice
+  else if (RegExp(
+    r'^Error: No \.desktop files found\s*$',
+    multiLine: true,
+  ).hasMatch(output))
+    l.appImageDesktopAdvice,
   if (RegExp(
     r'^[^\r\n]*\bSelfUpdate\.Completed\b[^\r\n]*\bresult="success"',
     multiLine: true,

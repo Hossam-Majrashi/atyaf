@@ -292,6 +292,14 @@ The user-authorized tag v1.2.7 targets `b5662b3eb482c166b5bc06d73688dcaf5ec099a3
 
 All fifteen public files in `dist/github-v1.2.7` match GitHub SHA256 digests and all fourteen published checksum entries. Both architecture sets independently passed local ELF/package/metadata/zsync/Flatpak validation without installation or execution of ARM64 payloads. A new local full serial run passes all 293 tests, alongside clean analysis and source-contract/format/shell/diff checks; 60 affected desktop/lock tests also pass independently. No new ARM64 GUI smoke or live Epic repair is claimed. Release documentation is the only source change in the publication session. Installed binaries, user profiles/credentials and previous dist files remain unchanged; public verification requests carried no credentials, and local Git used the configured provider rather than a token in source/URLs.
 
+## AppImage temporary extraction repair — 1.2.8
+
+Default per-profile TMPDIR now uses short private `/var/tmp/atyaf-<uid>/<uuid>` paths instead of `/tmp`. This avoids the common memory-filesystem capacity limit and old incomplete extraction cache without silently deleting it. Explicit overrides, short Unix socket paths, no-follow/owner/mode checks and approval remain unchanged. Desktop/complete-report advice distinguishes unsquashfs space exhaustion from missing embedded desktop metadata in both languages; no historical status or empty-output Studio failure cause is invented.
+
+Local verification: all 296 serial tests, clean analysis, normalized localization/source-contract, shell/diff checks and native x86_64 plus Flatpak packaging pass. All seven `dist/atyaf-1.2.8-linux-x86_64.*` assets pass full package/ELF/zsync/Flatpak validation. A stale relocated CMake release directory was preserved before rebuilding. Build-only zsync/flatpak-builder tools reuse ignored `build/release-tools-1.2.6/usr/bin`; no system installation was needed.
+
+A native release-binary smoke with an independent AppImage copy, disposable library/approval and private session bus completed extraction, observed its xrevive KDE window after twelve seconds and no Atyaf fallback, then terminated only test processes and persisted the runtime's handled-termination exit 0/complete streams without Atyaf errors. The private bus avoids activating the user's already-running xrevive. No missing-desktop/space/panic errors remained; unrelated GTK/accessibility warnings are not claimed fixed. Source bytes/mode, real account data, old temporary trees, running user programs, installed Atyaf and prior packages remain unchanged. Hosted dual-architecture publication needs separate verification; no ARM64 GUI/login/gameplay smoke is implied.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building

@@ -738,6 +738,18 @@ abstract class AppLocalizations {
   /// **'HOME path (empty keeps real HOME)'**
   String get homePath;
 
+  /// No description provided for @appImageSpaceAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'AppImage extraction ran out of space or inodes on its temporary filesystem. The later missing .desktop error can be a consequence of incomplete extraction, not a missing desktop shortcut. Updated Atyaf uses a fresh short /var/tmp path by default instead of /tmp; restart with the updated version. Check free space and inodes on the actual TMPDIR filesystem, especially with custom paths. Old temporary files are not deleted automatically, and /var/tmp can also fill up.'**
+  String get appImageSpaceAdvice;
+
+  /// No description provided for @appImageDesktopAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'The AppImage runtime could not find its embedded .desktop metadata. A previous failed extraction may have left an incomplete cached tree, or the image itself may be incomplete. Updated Atyaf uses a default /var/tmp path that avoids the old /tmp cache. If it persists, review the full extraction output and obtain a complete AppImage from its trusted publisher; creating an Atyaf shortcut does not repair embedded metadata.'**
+  String get appImageDesktopAdvice;
+
   /// No description provided for @tauriUnknownPathAdvice.
   ///
   /// In en, this message translates to:
@@ -1060,7 +1072,7 @@ abstract class AppLocalizations {
   /// No description provided for @tempHelp.
   ///
   /// In en, this message translates to:
-  /// **'The default temporary path is a short private per-profile Linux directory, avoiding Unix socket path limits in Electron/Chromium applications. Explicit temporary paths and TMPDIR overrides are preserved.'**
+  /// **'Short private /var/tmp paths avoid small /tmp memory filesystems and Unix socket path limits. Custom temporary paths and TMPDIR overrides are preserved.'**
   String get tempHelp;
 
   /// No description provided for @update.

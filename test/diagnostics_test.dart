@@ -277,6 +277,7 @@ void main() {
     );
     await longRuntime.prepare(profile);
     final temp = longRuntime.environmentFor(profile)['TMPDIR']!;
+    expect(temp, startsWith('/var/tmp/atyaf-'));
     expect(
       utf8.encode('$temp/scoped_dirXXXXXXXXXX/SingletonSocket').length,
       lessThan(108),

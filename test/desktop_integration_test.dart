@@ -456,6 +456,91 @@ void main() {
     }
   });
 
+  test('AppImage extraction advice distinguishes full storage from missing metadata', () {
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      const space =
+          'Write on output file failed because No space left on device';
+      expect(
+        logAdvice(
+          l,
+          'Parallel unsquashfs: Using 8 processors\n$space\nError: No .desktop files found\n',
+        ),
+        [l.appImageSpaceAdvice],
+      );
+      expect(
+        logAdvice(
+          l,
+          '$space\nFATAL ERROR: writer: failed to write file /tmp/example\n',
+        ),
+        [l.appImageSpaceAdvice],
+      );
+      expect(logAdvice(l, 'Error: No .desktop files found\r\n'), [
+        l.appImageDesktopAdvice,
+      ]);
+      for (final output in [
+        'No .desktop files found',
+        'Error: No .desktop files found elsewhere',
+        'prefix Error: No .desktop files found',
+        'Parallel unsquashfs: Using 8 processors\ncomplete',
+        'No space left on device',
+        'exit code 2',
+        '',
+      ]) {
+        expect(logAdvice(l, output), isEmpty, reason: output);
+      }
+    }
+  });
+
+  test('AppImage failure reports retain exit status, history and full output in both languages', () async {
+    const profile = Profile(
+      id: 'extraction',
+      applicationId: 'app',
+      name: 'xrevive fixture',
+    );
+    repository.saveProfile(profile);
+    final directory = Directory('${runtime.profileRoot(profile.id)}/logs');
+    await directory.create(recursive: true);
+    final out = File('${directory.path}/out');
+    final err = File('${directory.path}/err');
+    await out.writeAsString('');
+    const error =
+        'Parallel unsquashfs: Using 8 processors\n'
+        'Write on output file failed because No space left on device\n'
+        'FATAL ERROR: writer: failed to write file /tmp/example/usr/bin/xrevive\n'
+        '611 inodes (3022 blocks) to write\nError: No .desktop files found\n';
+    final full = '$error${'x' * (300 * 1024)}\nالنهاية';
+    await err.writeAsString(full);
+    repository.recordLaunch({
+      'id': 'extraction',
+      'profileId': profile.id,
+      'pid': 716221,
+      'start': '2026-10-31T02:45:19',
+      'stop': '2026-10-31T02:45:20',
+      'exitCode': 1,
+      'crashed': false,
+      'stdout': out.path,
+      'stderr': err.path,
+    });
+    final record = repository.history(profile.id).single;
+    for (final l in [AppLocalizationsEn(), AppLocalizationsAr()]) {
+      final sections = await launchReport(l, library, profile, record);
+      expect(
+        sections.singleWhere((s) => s.title == l.launchAdvice).text,
+        l.appImageSpaceAdvice,
+      );
+      final report = await library.logs.completeReport(sections);
+      expect(report, contains(full));
+      final destination = File(
+        '${temporary.path}/extraction-${l.localeName}.txt',
+      );
+      await library.logs.exportReport(sections, destination.path);
+      expect(await destination.readAsString(), report);
+    }
+    expect(repository.history(profile.id).single, record);
+    expect(repository.profiles.single.toJson(), profile.toJson());
+    expect(await err.readAsString(), full);
+  });
+
   test('Interrupted connection-warning reports deduplicate advice and preserve history and full streams', () async {
     const profile = Profile(
       id: 'connection',

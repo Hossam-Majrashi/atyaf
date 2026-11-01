@@ -52,7 +52,7 @@
 - **إدارة العمليات:** تشغيل وإيقاف تدريجي وإعادة تشغيل، مع إيقاف قسري منفصل ومؤكد عند الحاجة. إغلاق نافذة أطياف لا يوقف البرامج المفتوحة؛ يبقى المشرف مخفيًا حتى اكتمال سجلات البرامج التي شغّلها، ثم ينتهي تلقائيًا.
 - **سجلات وتشخيص:** عرض سجل التشغيل والمخرجات والأخطاء، ونسخ التقارير كاملة أو تصديرها إلى TXT. زر «حذف الأخطاء» في صفحة «الأخطاء والتشخيص» يزيل الأخطاء القديمة بتأكيد لمراقبة الأخطاء الجديدة، دون حذف سجل تشغيل الحسابات أو ملفات المخرجات. صدّر تقارير أخطاء أطياف أولًا إن كنت تحتاجها. تتوفر تفاصيل انهيار النظام عند توفر `coredumpctl` والصلاحيات المناسبة.
 - **نسخ احتياطي واستعادة:** تصدير المكتبة المُدارة واستعادتها، دون تضمين الملفات التنفيذية الخارجية أو بيانات المسارات المخصصة.
-- **مسارات مؤقتة قصيرة:** تجنّب حدود طول مسارات مقابس Unix في تطبيقات Electron وChromium، دون تعطيل آليات الحماية الخاصة بها.
+- **مسارات مؤقتة قصيرة:** مجلدات خاصة تحت `/var/tmp` بدل `/tmp` لتجنب ضغط نظام الملفات في الذاكرة وفك AppImage غير المكتمل، مع احترام حدود مقابس Unix دون تعطيل الحماية. تبقى المسارات المخصصة كما هي ولا تُحذف محتويات `/tmp` القديمة تلقائيًا. افحص المساحة وعُقد الملفات على المسار الفعلي عند ظهور `No space left on device`؛ قد تمتلئ `/var/tmp` أيضًا.
 
 ### التحديث الداخلي للبرامج
 
@@ -190,7 +190,7 @@ The screenshots are displayed in the Arabic section above:
 - **Process management:** Launch, stop gracefully and restart, with force termination as a separate confirmed action. Closing the Atyaf window leaves programs running; its hidden supervisor exits automatically once its own programs' logs and exit status have been saved.
 - **Logs and diagnostics:** Inspect launch history, output and errors, copy complete reports or export TXT. **Clear errors** in **Errors and diagnostics** confirms removal of previous diagnostics so you can monitor new errors, without deleting profile launch history or output files. Export Atyaf error reports first if needed. System crash details are available when `coredumpctl` and permissions allow access.
 - **Backup and restore:** Export and restore the managed library without including external executables or custom data paths.
-- **Short temporary paths:** Avoid Electron/Chromium Unix socket pathname limits without disabling their security mechanisms.
+- **Short temporary paths:** Private directories under `/var/tmp` instead of `/tmp` avoid pressure on memory-backed temporary filesystems and reuse of old incomplete AppImage extractions, while respecting Unix socket limits without disabling security. Custom paths stay unchanged; old `/tmp` contents are not automatically deleted. Check free space and inodes on the actual temporary filesystem for `No space left on device`; `/var/tmp` can also fill up.
 
 ### Application self-updates
 

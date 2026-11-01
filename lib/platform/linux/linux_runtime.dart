@@ -63,7 +63,10 @@ class LinuxRuntime implements RuntimeService {
     if (!RegExp(r'^\d+$').hasMatch(uid) || uid == '0') {
       throw StateError('Private temporary storage requires a non-root UID');
     }
-    return '/tmp/atyaf-$uid/${const Uuid().v5(Namespace.url.value, '$root/$id')}';
+    // /tmp is often a small tmpfs. Self-extracting AppImages need real
+    // filesystem capacity, while Chromium still needs a short socket path.
+    // A new namespace also avoids reusing old, partially extracted /tmp trees.
+    return '/var/tmp/atyaf-$uid/${const Uuid().v5(Namespace.url.value, '$root/$id')}';
   }
 
   static const temporaryHelper = r'''

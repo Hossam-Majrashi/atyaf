@@ -238,7 +238,10 @@ void main() {
           const error =
               '[Social Overlay] STOMP error 4004: Inactive timeout\n'
               'Failed to setup app: error encountered during setup hook: unknown path\n'
-              'corrupted double-linked list\n';
+              'corrupted double-linked list\n'
+              'Parallel unsquashfs: Using 8 processors\n'
+              'Write on output file failed because No space left on device\n'
+              'Error: No .desktop files found\n';
           await tester.runAsync(() async {
             final root = library.runtime.profileRoot('profile');
             await File('$root/logs/stdout').writeAsString(output);
@@ -280,6 +283,8 @@ void main() {
           expect(find.text(l.tauriUnknownPathAdvice), findsOneWidget);
           expect(find.text(l.selfUpdateAdvice), findsOneWidget);
           expect(find.text(l.heapCorruptionAdvice), findsOneWidget);
+          expect(find.text(l.appImageSpaceAdvice), findsOneWidget);
+          expect(find.text(l.appImageDesktopAdvice), findsNothing);
           expect(find.text(output), findsOneWidget);
           expect(find.text(error), findsOneWidget);
           expect(repository.history('profile').single, original);
