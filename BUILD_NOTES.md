@@ -300,6 +300,12 @@ Local verification: all 296 serial tests, clean analysis, normalized localizatio
 
 A native release-binary smoke with an independent AppImage copy, disposable library/approval and private session bus completed extraction, observed its xrevive KDE window after twelve seconds and no Atyaf fallback, then terminated only test processes and persisted the runtime's handled-termination exit 0/complete streams without Atyaf errors. The private bus avoids activating the user's already-running xrevive. No missing-desktop/space/panic errors remained; unrelated GTK/accessibility warnings are not claimed fixed. Source bytes/mode, real account data, old temporary trees, running user programs, installed Atyaf and prior packages remain unchanged. Hosted dual-architecture publication needs separate verification; no ARM64 GUI/login/gameplay smoke is implied.
 
+### Published verification — v1.2.8
+
+All four jobs in https://github.com/Hossam-Majrashi/atyaf/actions/runs/41352607853 succeeded for tagged source `56fb0c0b6c03e78222556a234c5332def6e4948d`. Both actual native architecture runners built seven real outputs each, including Flatpak; publication jointly validated all fourteen before publishing fifteen assets at https://github.com/Hossam-Majrashi/atyaf/releases/tag/v1.2.8. The public non-draft/non-prerelease release and tag target that exact source. All public downloads in `dist/github-v1.2.8` match GitHub SHA256 digests and the fourteen-entry published manifest; both architecture sets independently pass the full local validator without installing packages or executing ARM64 code. Old releases and local packages remain intact.
+
+Read-only Studio investigation additionally found a patch restarter for the supplied PID/time, updater exit 0 and a new-version IDE STARTED entry nineteen seconds later. Its historical exit 2 was recorded during internal update/restart, not established as a crash or failed patch. No history/status/settings were rewritten and private IDE logs were not uploaded. No personal token was written to commands/source/Git URLs; revoke the exposed credential. Documentation verification does not retag the built source.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
