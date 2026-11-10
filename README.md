@@ -54,6 +54,12 @@
 - **نسخ احتياطي واستعادة:** تصدير المكتبة المُدارة واستعادتها، دون تضمين الملفات التنفيذية الخارجية أو بيانات المسارات المخصصة.
 - **مسارات مؤقتة قصيرة:** مجلدات خاصة تحت `/var/tmp` بدل `/tmp` لتجنب ضغط نظام الملفات في الذاكرة وفك AppImage غير المكتمل، مع احترام حدود مقابس Unix دون تعطيل الحماية. تبقى المسارات المخصصة كما هي ولا تُحذف محتويات `/tmp` القديمة تلقائيًا. افحص المساحة وعُقد الملفات على المسار الفعلي عند ظهور `No space left on device`؛ قد تمتلئ `/var/tmp` أيضًا.
 
+### التشغيل عند تسجيل الدخول
+
+من بطاقة الحساب أو قائمتها اختر **التشغيل عند تسجيل الدخول** ثم **تفعيل بدء التشغيل**. يُنشأ ملف في مجلد بدء تشغيل سطح المكتب المضيف يستدعي أطياف بمعرّف الحساب ومكتبته، لا ملف AppImage مباشرة. يعمل بعد تسجيل الدخول وليس قبل الجلسة، ويحافظ على العزل والموافقة ومنع تكرار التشغيل والسجلات. لا يؤدي التفعيل إلى التشغيل الفوري. عطّل الخيار من الحوار نفسه؛ الحذف والاستعادة يزيلان التسجيلات المدارة دون إعادة تفعيلها من النسخة الاحتياطية.
+
+عطّل خيار بدء التشغيل داخل البرنامج نفسه لتجنب مسار تشغيل مستقل. ملفات `autostart` داخل إعدادات الحساب المعزولة لا يقرأها سطح المكتب المضيف. فتح الملف التنفيذي مباشرة يتجاوز أطياف وقد يفتح نسخة ببيانات المستخدم العامة؛ عمليات `--crash-monitor` قد تكون عمليات مساعدة وليست نوافذ إضافية. لا يوقف أطياف النسخ الخارجية ولا يدمج أو يحذف بياناتها. لا تُستبدل ملفات بدء التشغيل الموجودة أو المعدّلة يدويًا.
+
 ### التحديث الداخلي للبرامج
 
 عندما يحدّث برنامج مثل Epic نفسه ويعيد تشغيله، يبقي أطياف الحساب محجوزًا ما دامت تدفقات المخرجات مفتوحة ومشرفها موثّقًا بمعرّف العملية ووقت بدئها وإقلاع النظام. إذا انتهت العملية الأصلية يظهر «قيد الإشراف على المخرجات / إعادة التشغيل»؛ لا يُسجَّل انقطاع زائف ولا يُسمح بنسخة مكررة أو استبدال الملفات أو حذف الحساب أثناء الانتظار. لا تتوفر أزرار إيقاف أو إعادة تشغيل لعملية جديدة غير موثّقة. هذا تتبع للإشراف وليس ضمانًا أن النسخة الجديدة ما زالت تعمل: العمليات التي تنفصل وتغلق التدفقات خارج نطاقه، ورمز خروج العملية الأصلية لا يصف خروج النسخة المعاد تشغيلها. تغيّر محتوى الملف يتطلب موافقة جديدة عند التشغيل التالي؛ لا تتغير الحسابات أو بيانات الدخول تلقائيًا.
@@ -191,6 +197,12 @@ The screenshots are displayed in the Arabic section above:
 - **Logs and diagnostics:** Inspect launch history, output and errors, copy complete reports or export TXT. **Clear errors** in **Errors and diagnostics** confirms removal of previous diagnostics so you can monitor new errors, without deleting profile launch history or output files. Export Atyaf error reports first if needed. System crash details are available when `coredumpctl` and permissions allow access.
 - **Backup and restore:** Export and restore the managed library without including external executables or custom data paths.
 - **Short temporary paths:** Private directories under `/var/tmp` instead of `/tmp` avoid pressure on memory-backed temporary filesystems and reuse of old incomplete AppImage extractions, while respecting Unix socket limits without disabling security. Custom paths stay unchanged; old `/tmp` contents are not automatically deleted. Check free space and inodes on the actual temporary filesystem for `No space left on device`; `/var/tmp` can also fill up.
+
+### Start at login
+
+Choose **Start at login → Enable startup** on the account card or its menu. A host desktop-session autostart entry invokes Atyaf with the stable account ID and originating library, never the AppImage directly. It starts after desktop login, not before the session, and retains isolation, approval, duplicate checks and logging. Enabling does not launch now. Disable it in the same dialog; deletion and restore remove registered entries without recreating them from backups.
+
+Disable the startup option inside the application to avoid an independent launch path. The host desktop does not read `autostart` files inside isolated profile settings. Direct executable launches bypass Atyaf and can create a separate instance using normal user data; `--crash-monitor` processes can be helpers rather than extra windows. Atyaf does not stop external instances or merge/delete their data. Existing or manually modified startup entries are preserved.
 
 ### Application self-updates
 

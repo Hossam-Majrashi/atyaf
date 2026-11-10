@@ -306,10 +306,19 @@ All four jobs in https://github.com/Hossam-Majrashi/atyaf/actions/runs/413526078
 
 Read-only Studio investigation additionally found a patch restarter for the supplied PID/time, updater exit 0 and a new-version IDE STARTED entry nineteen seconds later. Its historical exit 2 was recorded during internal update/restart, not established as a crash or failed patch. No history/status/settings were rewritten and private IDE logs were not uploaded. No personal token was written to commands/source/Git URLs; revoke the exposed credential. Documentation verification does not retag the built source.
 
+## Desktop-session autostart — 1.2.9
+
+The desktop account card/menu exposes explicit bilingual startup controls. LinuxDesktopEntries emits a host XDG autostart entry invoking the persistent Atyaf launcher with `--launch-profile`, pinned HOME/library, normal approval, duplicate checks and full supervision. Enabling does not launch now. A privately deployed, shell-free Python helper and private local registry preserve foreign/modified files; profile deletion and successful restore remove registered entries, and backups never enable them automatically. Python 3 remains the only helper runtime; no system service, updater, new package dependency or security-bypass flag was added. XDG autostart runs after desktop login, not at early system boot.
+
+The complete local serial suite passes all 310 tests with no skips. All fourteen targeted Flutter tests also pass without display/session-bus metadata, including six localized desktop cases and six Python boundary/rollback cases. A real GIO launch tests Unicode/quotes/percent Exec escaping and exact library binding. Native x86_64 and Flatpak packaging returned 0, and all seven `dist/atyaf-1.2.9-linux-x86_64.*` files pass the full package/ELF/zsync/Flatpak validator. Prior packages and `dist/SHA256SUMS-before-1.2.9` are preserved; build-only tools reuse ignored `build/release-tools-1.2.6/usr/bin` without a system install. Analysis, format, source-contract, helper compilation, shell and diff checks pass.
+
+A release-binary disposable-library smoke starts a real autostart through GIO, observes no Atyaf fallback window, rejects a concurrent duplicate and persists complete streams/exit 0 with no errors. A separate native smoke verifies visible first approval without execution and hidden approved launching. The existing MisterDownloadManager account's host startup was explicitly registered against stable installed `/usr/bin/atyaf` with unchanged application/profile payloads and without starting/stopping programs. Its isolated app-owned startup and both instances/data were preserved. Installed Atyaf binaries were not replaced; install the release for the new UI. No logout/reboot, ARM64 graphical runtime or historical ArtCraft exit recovery is claimed. Hosted build/publication must be checked independently; authentication uses the configured provider in memory, never a token in source/commands/URLs.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
 - https://specifications.freedesktop.org/basedir-spec/latest/
+- https://specifications.freedesktop.org/autostart-spec/latest/
 - https://specifications.freedesktop.org/desktop-entry-spec/latest/exec-variables.html
 - https://pub.dev/packages/icons_launcher/versions/3.1.0
 - https://docs.python.org/3/library/tarfile.html

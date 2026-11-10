@@ -10,6 +10,31 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get autostart => 'التشغيل عند تسجيل الدخول';
+
+  @override
+  String get enableAutostart => 'تفعيل بدء التشغيل';
+
+  @override
+  String get disableAutostart => 'تعطيل بدء التشغيل';
+
+  @override
+  String get autostartEnabled =>
+      'هذا الحساب مفعّل عند تسجيل الدخول إلى سطح المكتب.';
+
+  @override
+  String get autostartDisabled =>
+      'هذا الحساب غير مفعّل عند تسجيل الدخول إلى سطح المكتب.';
+
+  @override
+  String get autostartHelp =>
+      'شغّل هذا الحساب عبر أطياف عند تسجيل الدخول إلى سطح مكتب لينكس، وليس قبل تسجيل الدخول. تُطبّق وسائطه المحفوظة وعزل بياناته والموافقة ومنع تكرار التشغيل. وافق بالطريقة المعتادة على الملف التنفيذي الأول أو المتغيّر. لا يؤدي التفعيل إلى تشغيله الآن.';
+
+  @override
+  String get autostartIsolationHelp =>
+      'عطّل خيار بدء التشغيل داخل البرنامج نفسه لتجنب تشغيل مباشر منفصل. لا يقرأ سطح المكتب ملفات بدء التشغيل المكتوبة داخل إعدادات الحساب المعزولة. فتح AppImage مباشرة يتجاوز أطياف وقد ينشئ نسخة أخرى ببيانات المستخدم العادية. لا يوقف أطياف تلك النسخة ولا يحذف بياناتها. تُحفظ ملفات بدء التشغيل الموجودة أو المعدّلة يدويًا.';
+
+  @override
   String get appName => 'أطياف';
 
   @override

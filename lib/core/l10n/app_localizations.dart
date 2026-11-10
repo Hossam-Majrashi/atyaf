@@ -48,6 +48,48 @@ abstract class AppLocalizations {
     Locale('ar'),
   ];
 
+  /// No description provided for @autostart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start at login'**
+  String get autostart;
+
+  /// No description provided for @enableAutostart.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable startup'**
+  String get enableAutostart;
+
+  /// No description provided for @disableAutostart.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable startup'**
+  String get disableAutostart;
+
+  /// No description provided for @autostartEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is enabled at desktop login.'**
+  String get autostartEnabled;
+
+  /// No description provided for @autostartDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is not enabled at desktop login.'**
+  String get autostartDisabled;
+
+  /// No description provided for @autostartHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Start this account through Atyaf when you sign in to your Linux desktop, not before login. Its saved arguments, storage isolation, approval and duplicate-launch checks still apply. Approve a first or changed executable normally. This does not launch it now.'**
+  String get autostartHelp;
+
+  /// No description provided for @autostartIsolationHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable the startup option in the application to avoid a separate direct launch. Startup files written inside isolated profile settings are not read by the host desktop. Opening the AppImage directly bypasses Atyaf and can create another instance using your normal user data. Atyaf never stops that instance or deletes its data. Existing or manually changed startup files are preserved.'**
+  String get autostartIsolationHelp;
+
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:

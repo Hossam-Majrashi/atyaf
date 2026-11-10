@@ -12,6 +12,7 @@ import '../../applications/services/application_service.dart';
 import '../../profiles/services/profile_service.dart';
 import '../../archives/services/archive_service.dart';
 import '../../backup/services/backup_service.dart';
+import '../../desktop_entries/services/autostart_service.dart';
 import '../../desktop_entries/services/desktop_entry_service.dart';
 import '../../desktop_entries/services/terminal_command_service.dart';
 import '../../launcher/services/launcher_service.dart';
@@ -50,6 +51,8 @@ class LibraryController extends ChangeNotifier {
       entries is TerminalCommandService
       ? entries as TerminalCommandService
       : null;
+  AutostartService? get autostart =>
+      entries is AutostartService ? entries as AutostartService : null;
   final ProcessService processes;
   final ManagedStorageService storage;
   late final UpdateService updates;
@@ -125,6 +128,7 @@ class LibraryController extends ChangeNotifier {
     if (processes.isRunning(profile.id)) {
       throw StateError('Stop profile before deletion');
     }
+    await autostart?.removeAutostart(profile.id);
     await entries.remove(profile.id);
     await terminalCommands?.removeTerminalCommands(profile.id);
     await runtime.cleanupTemporary(profile.id);

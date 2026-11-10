@@ -1,20 +1,20 @@
-# Atyaf 1.2.8 — أطياف
+# Atyaf 1.2.9 — أطياف
 
 ## العربية
 
-- نقل المسارات المؤقتة الافتراضية إلى مجلدات خاصة وقصيرة تحت `/var/tmp` بدل `/tmp` لتجنب ضغط مساحة الملفات المؤقتة في الذاكرة وإعادة استخدام فك AppImage القديم غير المكتمل.
-- الحفاظ على فصل الحسابات وحدود طول مقابس Electron/Chromium والمسارات ومتغيرات `TMPDIR` المخصصة. لا تُحذف الملفات المؤقتة القديمة أو بيانات الحسابات تلقائيًا.
-- توضيح نفاد المساحة أو عُقد الملفات أثناء فك AppImage، والتمييز بين غياب بيانات `.desktop` المضمّنة وغياب اختصار سطح المكتب، في الواجهة والتقارير العربية والإنجليزية.
-- الحفاظ على المخرجات الكاملة ورموز الخروج السابقة والموافقة على الملفات التنفيذية دون تعديل بيانات الدخول أو إضافة خيارات تعطّل الحماية.
+- إضافة «التشغيل عند تسجيل الدخول» لكل حساب في بطاقته وقائمته، مع تفعيل وتعطيل صريحين دون تشغيل فوري.
+- استدعاء أطياف بمعرّف الحساب ومكتبته عند بدء جلسة سطح المكتب بدل تشغيل AppImage مباشرة؛ تبقى إعدادات الحساب وعزل بياناته والموافقة ومنع التكرار والسجلات الكاملة فعّالة.
+- توضيح سبب عدم عمل خيار بدء التشغيل الداخلي عند كتابة ملفه داخل إعدادات معزولة، وخطر فتح البرنامج مباشرة ببيانات المستخدم العامة.
+- حماية ملفات بدء التشغيل الموجودة أو المعدّلة يدويًا، وإزالة التسجيلات المدارة عند حذف الحساب أو استعادة المكتبة. لا تُفعّل النسخ الاحتياطية برامج تلقائيًا.
 
 ## English
 
-- Move default temporary storage from `/tmp` to short, private per-profile `/var/tmp` directories, avoiding pressure on memory-backed temporary filesystems and reuse of old incomplete AppImage extraction trees.
-- Preserve profile isolation, Electron/Chromium Unix socket limits, custom paths and explicit `TMPDIR` overrides. Old temporary contents and account data are not automatically deleted.
-- Explain extraction space/inode exhaustion and distinguish missing embedded `.desktop` metadata from a missing desktop shortcut in bilingual desktop diagnostics and complete reports.
-- Preserve complete output, genuine exit status and executable approval without changing credentials or adding security-bypass flags.
+- Add an explicit per-account **Start at login** action to account cards and menus, with enable/disable controls and no immediate launch.
+- Invoke Atyaf with the stable account ID and originating library at desktop-session login instead of launching AppImages directly. Saved settings, storage isolation, approval, duplicate checks and complete supervision remain in effect.
+- Explain why application-owned startup files inside isolated settings are invisible to the host desktop and how a direct executable launch can create another instance using normal user data.
+- Preserve existing or manually modified startup entries; remove registered entries on account deletion/library restore. Backups never silently enable startup.
 
-**Scope / الحدود:** `/var/tmp` can also fill up or use a separately configured filesystem; inspect free space and inodes on the actual `TMPDIR` filesystem. Existing custom paths require explicit review. Studio's historical exit code 2 with empty streams does not establish a cause, and no historical status is reconstructed. / قد تمتلئ `/var/tmp` أيضًا؛ افحص المساحة وعُقد الملفات على نظام ملفات `TMPDIR` الفعلي. لا يكفي رمز خروج Studio القديم مع غياب المخرجات لتحديد السبب، ولا تُستعاد رموز خروج مجهولة.
+**Scope / الحدود:** Startup requires a desktop session supporting XDG autostart, and occurs after login, not at early system boot. First or changed executables require normal approval. Direct launches outside Atyaf are not adopted or terminated. No data is merged/deleted and no historical unknown exit status is reconstructed. The supplied ArtCraft log does not establish a crash or Flatpak installer failure. / يتطلب التشغيل جلسة تدعم XDG autostart ويحدث بعد تسجيل الدخول. تبقى الموافقة على الملفات الجديدة أو المتغيّرة مطلوبة. لا تُتبنّى النسخ الخارجية أو تُوقف، ولا تُدمج أو تُحذف بياناتها أو تُستعاد رموز خروج قديمة مجهولة. لا يثبت سجل ArtCraft المرفق انهيارًا أو فشل مثبت Flatpak.
 
 ## Packages and verification / الحزم والتحقق
 

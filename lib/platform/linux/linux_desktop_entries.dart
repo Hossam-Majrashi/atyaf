@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 
+import '../../features/desktop_entries/services/autostart_service.dart';
 import '../../features/desktop_entries/services/desktop_entry_service.dart';
 import '../../features/desktop_entries/services/terminal_command_service.dart';
 import '../../shared/models/library_models.dart';
@@ -13,23 +14,27 @@ import 'linux_runtime.dart';
 import 'linux_terminal_commands.dart';
 
 class LinuxDesktopEntries
-    implements DesktopEntryService, TerminalCommandService {
+    implements DesktopEntryService, TerminalCommandService, AutostartService {
   LinuxDesktopEntries(
     this.runtime,
     this.icon, {
     String? executable,
     String? iconHelper,
     this.terminalHelper,
+    String? autostartHelper,
   }) : executable =
            executable ??
            Platform.environment['ATYAF_LAUNCHER'] ??
            Platform.resolvedExecutable,
+       autostartHelper =
+           autostartHelper ??
+           File('assets/linux/profile_autostart.py').absolute.path,
        iconHelper =
            iconHelper ??
            File('assets/linux/desktop_icon_helper.py').absolute.path;
   final RuntimeService runtime;
   final Uint8List icon;
-  final String executable, iconHelper;
+  final String executable, iconHelper, autostartHelper;
   final String? terminalHelper;
   late final terminal = LinuxTerminalCommands(
     runtime,
@@ -55,6 +60,66 @@ class LinuxDesktopEntries
   @override
   Future<List<String>> removeTerminalCommands(String profileId) =>
       terminal.removeTerminalCommands(profileId);
+
+  Future<bool> _autostart(String operation, String id, {String? name}) async {
+    runtime.profileRoot(id);
+    final host = runtime is LinuxRuntime
+        ? (runtime as LinuxRuntime).host
+        : Platform.environment;
+    final config = p.isAbsolute(host['XDG_CONFIG_HOME'] ?? '')
+        ? host['XDG_CONFIG_HOME']!
+        : p.join(host['HOME']!, '.config');
+    final launcher = LinuxCommands.flatpak
+        ? ['/usr/bin/flatpak', 'run', 'com.h.atyaf']
+        : [executable];
+    final exec = [
+      '/usr/bin/env',
+      'HOME=${host['HOME']}',
+      'XDG_DATA_HOME=${runtime.dataHome}',
+      ...launcher,
+      '--launch-profile',
+      id,
+    ].map(quoteExec).join(' ');
+    final result = await LinuxCommands.run('/usr/bin/python3', [
+      autostartHelper,
+      jsonEncode({
+        'root': runtime.root,
+        'config': config,
+        'profile': id,
+        'operation': operation,
+        'content':
+            '[Desktop Entry]\nType=Application\nName=${value(name ?? id)}\n'
+            'Exec=$exec\nTerminal=false\nStartupNotify=false\n'
+            'X-GNOME-Autostart-enabled=true\n',
+      }),
+    ]);
+    if (result.exitCode != 0) {
+      throw FileSystemException(result.stderr.toString(), autostartHelper);
+    }
+    final response = jsonDecode(result.stdout.toString()) as Map;
+    if (response['error'] != null) {
+      throw FileSystemException(response['error'] as String, config);
+    }
+    return response['ok'] as bool;
+  }
+
+  @override
+  Future<bool> autostartEnabled(String profileId) =>
+      _autostart('status', profileId);
+
+  @override
+  Future<void> setAutostart(Profile profile, bool enabled) async {
+    await _autostart(
+      enabled ? 'enable' : 'disable',
+      profile.id,
+      name: profile.name,
+    );
+  }
+
+  @override
+  Future<void> removeAutostart(String profileId) async {
+    await _autostart('disable', profileId);
+  }
 
   static String value(String input) => input
       .replaceAll('\\', '\\\\')

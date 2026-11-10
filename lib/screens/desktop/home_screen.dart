@@ -19,6 +19,7 @@ import 'application_browser.dart';
 import 'profile_editor.dart';
 import 'settings_screen.dart';
 import 'terminal_command_dialog.dart';
+import 'autostart_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -580,6 +581,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           await createShortcut(profile);
                         case 'terminal':
                           await terminalCommand(profile);
+                        case 'autostart':
+                          await autostart(profile);
                         case 'removeShortcut':
                           await library.entries.remove(profile.id);
                           notifyDone();
@@ -601,6 +604,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       PopupMenuItem(
                         value: 'terminal',
                         child: Text(l.terminalCommand),
+                      ),
+                    if (library.autostart != null)
+                      PopupMenuItem(
+                        value: 'autostart',
+                        child: Text(l.autostart),
                       ),
                     PopupMenuItem(
                       value: 'removeShortcut',
@@ -656,6 +664,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.terminal_rounded),
                     label: Text(l.terminalCommand),
                   ),
+                if (library.autostart != null)
+                  OutlinedButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () => perform(() => autostart(profile)),
+                    icon: const Icon(Icons.power_settings_new_rounded),
+                    label: Text(l.autostart),
+                  ),
                 if (running && !pending)
                   OutlinedButton.icon(
                     onPressed: busy
@@ -671,6 +687,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  Future<void> autostart(Profile profile) => showDialog<void>(
+    context: context,
+    builder: (_) => AutostartDialog(library: library, profile: profile),
+  );
 
   Future<void> terminalCommand(Profile profile) => showDialog<void>(
     context: context,

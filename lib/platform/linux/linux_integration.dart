@@ -63,6 +63,11 @@ final class LinuxIntegration {
       terminalHelper,
       await rootBundle.loadString('assets/linux/terminal_commands.py'),
     );
+    final autostartHelper = '${runtime.root}/profile_autostart.py';
+    await LinuxCommands.writePrivateFile(
+      autostartHelper,
+      await rootBundle.loadString('assets/linux/profile_autostart.py'),
+    );
     final windowHelper = '${runtime.root}/profile_windows.py';
     await LinuxCommands.writePrivateFile(
       windowHelper,
@@ -82,6 +87,7 @@ final class LinuxIntegration {
       icon.buffer.asUint8List(),
       iconHelper: iconHelper,
       terminalHelper: terminalHelper,
+      autostartHelper: autostartHelper,
     );
     return LibraryController(
       repository: repository,
@@ -98,6 +104,7 @@ final class LinuxIntegration {
         archives,
         processes,
         terminalCommands: entries,
+        autostart: entries,
       ),
       entries: entries,
       processes: processes,

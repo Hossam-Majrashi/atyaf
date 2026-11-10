@@ -1,5 +1,12 @@
 {
   "@@locale": "en",
+  "autostart": "Start at login",
+  "enableAutostart": "Enable startup",
+  "disableAutostart": "Disable startup",
+  "autostartEnabled": "This account is enabled at desktop login.",
+  "autostartDisabled": "This account is not enabled at desktop login.",
+  "autostartHelp": "Start this account through Atyaf when you sign in to your Linux desktop, not before login. Its saved arguments, storage isolation, approval and duplicate-launch checks still apply. Approve a first or changed executable normally. This does not launch it now.",
+  "autostartIsolationHelp": "Disable the startup option in the application to avoid a separate direct launch. Startup files written inside isolated profile settings are not read by the host desktop. Opening the AppImage directly bypasses Atyaf and can create another instance using your normal user data. Atyaf never stops that instance or deletes its data. Existing or manually changed startup files are preserved.",
   "appName": "Atyaf",
   "intro": "One application. Many independent identities.",
   "introDetail": "Keep work, personal and testing profiles separate. Manage executables and portable applications locally on Linux.",

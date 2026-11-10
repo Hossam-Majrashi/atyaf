@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import '../../features/backup/services/backup_service.dart';
+import '../../features/desktop_entries/services/autostart_service.dart';
 import '../../features/desktop_entries/services/terminal_command_service.dart';
 import '../../shared/services/process_service.dart';
 import '../../shared/models/library_models.dart';
@@ -19,8 +20,10 @@ class LinuxBackup implements BackupService {
     this.archives,
     this.processes, {
     this.terminalCommands,
+    this.autostart,
   });
   final TerminalCommandService? terminalCommands;
+  final AutostartService? autostart;
   final RuntimeService runtime;
   final LinuxRepository repository;
   final LinuxArchives archives;
@@ -196,6 +199,7 @@ class LinuxBackup implements BackupService {
         rethrow;
       }
       for (final id in oldProfileIds) {
+        await autostart?.removeAutostart(id);
         await terminalCommands?.removeTerminalCommands(id);
       }
     } finally {

@@ -10,6 +10,30 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get autostart => 'Start at login';
+
+  @override
+  String get enableAutostart => 'Enable startup';
+
+  @override
+  String get disableAutostart => 'Disable startup';
+
+  @override
+  String get autostartEnabled => 'This account is enabled at desktop login.';
+
+  @override
+  String get autostartDisabled =>
+      'This account is not enabled at desktop login.';
+
+  @override
+  String get autostartHelp =>
+      'Start this account through Atyaf when you sign in to your Linux desktop, not before login. Its saved arguments, storage isolation, approval and duplicate-launch checks still apply. Approve a first or changed executable normally. This does not launch it now.';
+
+  @override
+  String get autostartIsolationHelp =>
+      'Disable the startup option in the application to avoid a separate direct launch. Startup files written inside isolated profile settings are not read by the host desktop. Opening the AppImage directly bypasses Atyaf and can create another instance using your normal user data. Atyaf never stops that instance or deletes its data. Existing or manually changed startup files are preserved.';
+
+  @override
   String get appName => 'Atyaf';
 
   @override
