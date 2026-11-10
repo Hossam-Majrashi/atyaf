@@ -314,6 +314,10 @@ The complete local serial suite passes all 310 tests with no skips. All fourteen
 
 A release-binary disposable-library smoke starts a real autostart through GIO, observes no Atyaf fallback window, rejects a concurrent duplicate and persists complete streams/exit 0 with no errors. A separate native smoke verifies visible first approval without execution and hidden approved launching. The existing MisterDownloadManager account's host startup was explicitly registered against stable installed `/usr/bin/atyaf` with unchanged application/profile payloads and without starting/stopping programs. Its isolated app-owned startup and both instances/data were preserved. Installed Atyaf binaries were not replaced; install the release for the new UI. No logout/reboot, ARM64 graphical runtime or historical ArtCraft exit recovery is claimed. Hosted build/publication must be checked independently; authentication uses the configured provider in memory, never a token in source/commands/URLs.
 
+### Published verification — v1.2.9
+
+All four jobs in https://github.com/Hossam-Majrashi/atyaf/actions/runs/42887224825 succeeded for source/tag `355670194fc0143c2c6ee51921126ff0439e0eff`. Both real native architecture runners built and validated seven actual outputs including Flatpak, followed by joint publication of fifteen public assets at https://github.com/Hossam-Majrashi/atyaf/releases/tag/v1.2.9. Tag and release target match the tested source; old releases remain intact. All fifteen public downloads in `dist/github-v1.2.9` match GitHub digests and all fourteen published checksum entries; both architecture sets independently pass full local ELF/package/zsync/Flatpak validation without installation or execution of ARM64 application code. This later documentation does not retag/rebuild the published release. Installed binaries/user payloads remain preserved except for the explicitly registered host startup described above. No private user data or credential was uploaded.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
