@@ -1,6 +1,8 @@
 """Reader boundary checks; all AppImage members are data, never programs."""
 import base64
+import os
 from pathlib import Path
+from io import BytesIO
 import subprocess
 import sys
 import tempfile
@@ -68,9 +70,38 @@ class ReaderTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 icons.member_name(name)
         listing = b'\nType = SquashFS\n\n----------\nPath = logo.png\nSize = 1\n\nPath = logo.png\nSize = 1\n'
-        with patch.object(icons, 'capture', return_value=listing):
+        with patch.object(icons, 'capture', return_value=listing), patch('builtins.open', return_value=BytesIO(b'\x7fELF\x02\x01\x01\x00AI\x02')):
             with self.assertRaises(ValueError):
                 icons.ImageReader('7z', '/image')
+
+    def test_archive_type_is_pinned_for_listing_and_reads(self):
+        for kind, flag, archive in [(2, '-tSquashFS', 'SquashFS'), (1, '-tIso', 'Iso')]:
+            listing = ('\nType = ' + archive + '\n\n----------\nPath = logo.png\nSize = 3\n').encode()
+            header = b'\x7fELF\x02\x01\x01\x00AI' + bytes([kind])
+            with patch('builtins.open', return_value=BytesIO(header)), patch.object(icons, 'capture', side_effect=[listing, b'png']) as capture:
+                reader = icons.ImageReader('7z', '/image')
+                self.assertEqual(reader.read('logo.png'), b'png')
+                for call in capture.call_args_list:
+                    self.assertIn(flag, call.args[0])
+                self.assertEqual(capture.call_args_list[0].args[0][2], 'l')
+                self.assertEqual(capture.call_args_list[1].args[0][2], 'x')
+
+    def test_header_does_not_follow_links_or_block_on_fifos(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / 'image'
+            source.write_bytes(b'\x7fELF\x02\x01\x01\x00AI\x02')
+            link = root / 'link'
+            link.symlink_to(source)
+            with patch.object(icons, 'capture') as capture:
+                with self.assertRaises(OSError):
+                    icons.ImageReader('7z', link)
+                capture.assert_not_called()
+            fifo = root / 'fifo'
+            os.mkfifo(fifo)
+            with patch.object(icons, 'capture', return_value=b'\nType = ELF\n\n----------\n'):
+                with self.assertRaises(NotImplementedError):
+                    icons.ImageReader('7z', fifo)
 
     def test_candidate_count_is_bounded(self):
         reader = self.reader({str(i) + '.png': {'Mode': '-rw', 'Size': '1'} for i in range(200)})
@@ -83,7 +114,7 @@ class ReaderTests(unittest.TestCase):
             icons.capture(['/usr/bin/python3', '-c', 'import time;time.sleep(5)'], 64, time.monotonic() + 0.1)
 
     def test_unsupported_filesystems_are_explicit(self):
-        with patch.object(icons, 'capture', return_value=b'\nType = ELF\n\n----------\n'):
+        with patch.object(icons, 'capture', return_value=b'\nType = ELF\n\n----------\n'), patch('builtins.open', return_value=BytesIO(b'\x7fELF\x02\x01\x01\x00AI\x02')):
             with self.assertRaises(NotImplementedError):
                 icons.ImageReader('7z', '/image')
 

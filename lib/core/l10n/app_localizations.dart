@@ -444,6 +444,18 @@ abstract class AppLocalizations {
   /// **'Add --big-picture to this profile’s arguments? Use only with a shadPS4 CLI version that lists this option in its help. This opens Big Picture mode, not the separate Qt Launcher. Other arguments and profile data are kept; no data migration or automatic launch occurs. Save and restart the profile to apply.'**
   String get shadps4BigPictureConfirm;
 
+  /// No description provided for @useMisterDownloadManagerBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'MisterDownloadManager: connect host browser'**
+  String get useMisterDownloadManagerBrowser;
+
+  /// No description provided for @misterDownloadManagerBrowserConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Use only with MisterDownloadManager’s standard, non-portable browser integration. Set MDM_DATA_DIR to the host’s misterdownloadmanager data folder so the browser and this profile use the same instance instead of opening a second one? This shares MisterDownloadManager settings and downloads with its normal host instance; it does not keep separate accounts for this application. Existing isolated data is preserved, not merged. Custom native-host environments or portable data folders need manual matching paths. Close other MisterDownloadManager instances, then Save and restart this profile. Nothing is launched automatically; other profile paths and browser registrations are unchanged.'**
+  String get misterDownloadManagerBrowserConfirm;
+
   /// No description provided for @useSecretService.
   ///
   /// In en, this message translates to:

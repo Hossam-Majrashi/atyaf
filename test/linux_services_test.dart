@@ -113,6 +113,143 @@ void main() {
     );
   });
 
+  test('Host-data substitution is opt-in, relocatable and independent of profile paths', () {
+    const ordinary = Profile(
+      id: 'ordinary',
+      applicationId: 'app',
+      name: 'Ordinary',
+    );
+    const connected = Profile(
+      id: 'connected',
+      applicationId: 'app',
+      name: 'Connected',
+      paths: {'data': '/custom/isolated'},
+      environment: {'MDM_DATA_DIR': '{hostData}/misterdownloadmanager'},
+      arguments: ['{hostData}', '{data}'],
+    );
+    expect(
+      runtime.environmentFor(ordinary).containsKey('MDM_DATA_DIR'),
+      runtime.host.containsKey('MDM_DATA_DIR'),
+    );
+    expect(
+      runtime.environmentFor(connected)['MDM_DATA_DIR'],
+      '${runtime.dataHome}/misterdownloadmanager',
+    );
+    expect(
+      runtime.environmentFor(connected)['XDG_DATA_HOME'],
+      '/custom/isolated',
+    );
+    expect(runtime.argumentsFor(connected), [
+      runtime.dataHome,
+      '/custom/isolated',
+    ]);
+    final relocated = LinuxRuntime(
+      environment: {
+        'HOME': '${temporary.path}/new home',
+        'XDG_DATA_HOME': 'relative',
+      },
+    );
+    expect(
+      relocated.environmentFor(connected)['MDM_DATA_DIR'],
+      '${temporary.path}/new home/.local/share/misterdownloadmanager',
+    );
+    expect(runtime.host.containsKey('CUSTOM'), isFalse);
+  });
+
+  test('Browser host and supervised MDM-style instance share IPC without a second launch or data migration', () async {
+    final oldData = File(
+      '${runtime.profileRoot('mdm')}/data/misterdownloadmanager/keep',
+    );
+    await oldData.parent.create(recursive: true);
+    await oldData.writeAsString('isolated data remains');
+    const app = Application(
+      id: 'app',
+      name: 'IPC fixture',
+      executable: '/usr/bin/python3',
+    );
+    final review = await runtime.inspect(app.executable);
+    final profile = Profile(
+      id: 'mdm',
+      applicationId: app.id,
+      name: 'Browser connected',
+      trustedFingerprint: review.fingerprint,
+      environment: const {'MDM_DATA_DIR': '{hostData}/misterdownloadmanager'},
+      arguments: const [
+        '-c',
+        r'''
+import json,os,socket,pathlib,sys
+folder=pathlib.Path(os.environ['MDM_DATA_DIR'])
+folder.mkdir(parents=True,exist_ok=True)
+server=socket.socket(); server.bind(('127.0.0.1',0)); server.listen(1); server.settimeout(10)
+(folder/'ipc.json').write_text(json.dumps({'port':server.getsockname()[1],'token':'fixture-only'}))
+with server.accept()[0] as client:
+    data=json.loads(client.makefile().readline())
+    assert data['token']=='fixture-only'
+    print(json.dumps([data['url'],os.environ['XDG_DATA_HOME'],os.environ['MDM_DATA_DIR']]),flush=True)
+    print('complete stderr',file=sys.stderr)
+    client.sendall(b'ok\n')
+server.close()
+''',
+      ],
+    );
+    repository.saveApplication(app);
+    repository.saveProfile(profile);
+    await processes.launch(app, profile);
+    final endpoint = File('${runtime.dataHome}/misterdownloadmanager/ipc.json');
+    for (var i = 0; i < 100 && !await endpoint.exists(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(await endpoint.exists(), isTrue);
+    const url =
+        'https://example.invalid/file%20with%20spaces?value=العربية&x=1';
+    // A host browser does not inherit this profile's isolated XDG environment.
+    // This fixture follows upstream mdm-ipc::data_dir, using a disposable IPC
+    // endpoint only; it never launches a browser or downloads anything.
+    final browser = await Process.run(
+      '/usr/bin/python3',
+      [
+        '-c',
+        r'''
+import json,os,pathlib,socket,sys
+folder=pathlib.Path(os.environ.get('MDM_DATA_DIR',str(pathlib.Path(os.environ['XDG_DATA_HOME'])/'misterdownloadmanager')))
+ep=json.loads((folder/'ipc.json').read_text())
+with socket.create_connection(('127.0.0.1',ep['port']),timeout=5) as client:
+    client.sendall((json.dumps({'token':ep['token'],'url':sys.argv[1]})+'\n').encode())
+    print(client.makefile().readline().strip())
+''',
+        url,
+      ],
+      environment: {...runtime.host}..remove('MDM_DATA_DIR'),
+      includeParentEnvironment: false,
+    );
+    expect(browser.exitCode, 0, reason: browser.stderr.toString());
+    expect(browser.stdout.toString().trim(), 'ok');
+    await settled(profile.id);
+    final history = repository.history(profile.id);
+    expect(history, hasLength(1));
+    expect(history.single['exitCode'], 0);
+    expect(
+      jsonDecode(
+        (await File(history.single['stdout'] as String).readAsString()).trim(),
+      ),
+      [
+        url,
+        runtime.resolvedPaths(profile)['data'],
+        '${runtime.dataHome}/misterdownloadmanager',
+      ],
+    );
+    expect(
+      await File(history.single['stderr'] as String).readAsString(),
+      'complete stderr\n',
+    );
+    expect(await oldData.readAsString(), 'isolated data remains');
+    await runtime.deleteManaged(runtime.profileRoot(profile.id));
+    expect(
+      await endpoint.exists(),
+      isTrue,
+    ); // Host data is never profile-owned.
+  });
+
   test('X11 capability and explicit GTK backend are profile-local without changing Wayland session, paths or other settings', () {
     final host = {
       ...runtime.host,

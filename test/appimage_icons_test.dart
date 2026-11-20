@@ -49,13 +49,18 @@ void main() {
     await temporary.delete(recursive: true);
   });
 
-  for (final iso in [false, true]) {
+  for (final (iso, compressedRuntime) in [
+    (false, false),
+    (false, true),
+    (true, false),
+  ]) {
     test(
-      'Embedded ${iso ? 'ISO' : 'SquashFS'} logo is decoded, browsable, automatic and backed up without AppRun',
+      'Embedded ${iso ? 'ISO' : 'SquashFS'} compressed-runtime=$compressedRuntime logo is decoded, browsable, automatic and backed up without AppRun',
       () async {
         final source = await appImageWithIcons(
           '${temporary.path}/logo "quote" %.AppImage',
           iso: iso,
+          compressedRuntime: compressedRuntime,
         );
         final original = await source.readAsBytes();
         final staged = await storage.stageAppImage(source.path);
@@ -192,6 +197,6 @@ void main() {
       environment: {...Platform.environment, 'PYTHONDONTWRITEBYTECODE': '1'},
     );
     expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-    expect(result.stderr.toString(), contains('Ran 11 tests'));
+    expect(result.stderr.toString(), contains('Ran 13 tests'));
   });
 }

@@ -172,6 +172,38 @@ class _ProfileEditorState extends State<ProfileEditor> {
     }
   }
 
+  Future<void> useMisterDownloadManagerBrowser() async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.useMisterDownloadManagerBrowser),
+        content: SingleChildScrollView(
+          child: Text(l.misterDownloadManagerBrowserConfirm),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.next),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final env = Map<String, String>.from(jsonDecode(environment.text) as Map);
+      env['MDM_DATA_DIR'] = '{hostData}/misterdownloadmanager';
+      environment.text = jsonEncode(env);
+      setState(() => error = null);
+    } catch (_) {
+      setState(() => error = l.invalidInput);
+    }
+  }
+
   Future<void> useX11WindowControls() async {
     if (!widget.hasX11Display) return;
     final l = AppLocalizations.of(context);
@@ -264,6 +296,15 @@ class _ProfileEditorState extends State<ProfileEditor> {
         ),
         const SizedBox(height: 18),
         field(environment, l.environment, lines: 3),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: OutlinedButton.icon(
+            onPressed: useMisterDownloadManagerBrowser,
+            icon: const Icon(Icons.download_outlined),
+            label: Text(l.useMisterDownloadManagerBrowser),
+          ),
+        ),
+        const SizedBox(height: 8),
         Align(
           alignment: AlignmentDirectional.centerStart,
           child: Tooltip(

@@ -238,6 +238,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'إضافة --big-picture إلى وسائط هذا الحساب؟ استخدمه فقط مع نسخة shadPS4 CLI التي تعرض هذا الخيار في المساعدة. يفتح وضع Big Picture وليس Qt Launcher المنفصل. تبقى الوسائط الأخرى وبيانات الحساب كما هي؛ لا تُنقل البيانات ولا يبدأ التشغيل تلقائيًا. احفظ الحساب وأعد تشغيله للتطبيق.';
 
   @override
+  String get useMisterDownloadManagerBrowser =>
+      'MisterDownloadManager: ربط متصفح الجهاز';
+
+  @override
+  String get misterDownloadManagerBrowserConfirm =>
+      'استخدمه فقط مع تكامل المتصفح القياسي لنسخة MisterDownloadManager غير المحمولة. هل تضبط MDM_DATA_DIR على مجلد بيانات misterdownloadmanager الخاص بالجهاز، ليستخدم المتصفح وهذا الحساب النسخة نفسها بدل فتح نسخة ثانية؟ سيشارك البرنامج إعداداته وتنزيلاته مع نسخته العادية على الجهاز؛ ولن تبقى حساباته منفصلة لهذا البرنامج. تُحفظ البيانات المعزولة السابقة دون دمجها. تحتاج بيئة الإضافة المخصصة أو مجلدات البيانات المحمولة مسارات متطابقة تُضبط يدويًا. أغلق نسخ MisterDownloadManager الأخرى، ثم احفظ هذا الحساب وأعد تشغيله. لا يبدأ التشغيل تلقائيًا ولا تتغير مسارات الحساب الأخرى أو تسجيلات المتصفح.';
+
+  @override
   String get useSecretService => 'Electron/Chromium: استخدام Secret Service';
 
   @override

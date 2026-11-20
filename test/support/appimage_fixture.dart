@@ -20,12 +20,16 @@ Future<File> appImageFixture(
 /// Tiny real SquashFS/ISO image fixtures containing a desktop entry, SVG logo,
 /// internal .DirIcon link and an AppRun which must never be executed. The ELF
 /// identification header is synthetic; these fixtures are read, not launched.
-Future<File> appImageWithIcons(String path, {bool iso = false}) async {
+Future<File> appImageWithIcons(
+  String path, {
+  bool iso = false,
+  bool compressedRuntime = false,
+}) async {
   final encoded = await File(
     'test/fixtures/appimage-icons.${iso ? 'iso' : 'squashfs'}.gz.b64',
   ).readAsString();
   final filesystem = gzip.decode(base64Decode(encoded.trim()));
-  final header = ByteData(64)
+  final header = ByteData(compressedRuntime ? 65536 : 64)
     ..setUint8(0, 127)
     ..setUint8(1, 69)
     ..setUint8(2, 76)
@@ -39,6 +43,15 @@ Future<File> appImageWithIcons(String path, {bool iso = false}) async {
     ..setUint16(16, 3, Endian.little)
     ..setUint16(18, 62, Endian.little);
   final bytes = header.buffer.asUint8List();
+  if (compressedRuntime) {
+    // A real zstd frame inside the runtime, before the real filesystem. An
+    // automatic 7-Zip probe opens this instead of the application's SquashFS.
+    bytes.setRange(
+      128,
+      156,
+      base64Decode('KLUv/QRYkQAAYXR5YWYtcmVhZGVyLWRlY295l+F8zw=='),
+    );
+  }
   return File(path).writeAsBytes(
     iso ? [...bytes, ...filesystem.skip(64)] : [...bytes, ...filesystem],
   );

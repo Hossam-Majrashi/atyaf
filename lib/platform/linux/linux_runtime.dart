@@ -200,7 +200,9 @@ finally:
     'profile': profileRoot(profile.id),
   };
   String expand(String value, Profile profile) {
-    for (final e in resolvedPaths(profile).entries) {
+    // Host data is opt-in (for native messaging clients sharing a host IPC
+    // endpoint); ordinary profile XDG paths remain isolated.
+    for (final e in {'hostData': dataHome, ...resolvedPaths(profile)}.entries) {
       value = value.replaceAll('{${e.key}}', e.value);
     }
     return value;

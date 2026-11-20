@@ -73,7 +73,17 @@ def member_name(name):
 
 class ImageReader:
     def __init__(self, tool, image):
-        self.command = [tool]
+        # Type-2 runtimes can contain zstd frames before their SquashFS payload.
+        # Automatic 7-Zip detection then opens the runtime's frame, not the app.
+        # Pin the archive handler for BOTH listing and member reads. Never run
+        # the image (including --appimage-offset) to discover its filesystem.
+        # No final-link following or blocking on a replaced FIFO while reading
+        # the header; the managed-source validation already requires a file.
+        with open(image, 'rb', opener=lambda path, flags: os.open(
+                path, flags | os.O_NOFOLLOW | os.O_NONBLOCK)) as source:
+            header = source.read(11)
+        archive_type = {b'AI\x02': '-tSquashFS', b'AI\x01': '-tIso'}.get(header[8:11])
+        self.command = [tool, archive_type] if archive_type else [tool]
         self.image = str(image)
         self.deadline = time.monotonic() + 45
         listing = capture(self.command + ['l', '-slt', '-sccUTF-8', '--', self.image],
