@@ -136,7 +136,7 @@ flutter build linux --release --target-platform linux-x64
 
 </div>
 
-تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.11-linux-x86_64.AppImage` و`atyaf-1.2.11-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
+تُحفظ الحزم في `dist/` بأسماء مثل `atyaf-1.2.12-linux-x86_64.AppImage` و`atyaf-1.2.12-linux-aarch64.deb`. يتوفر أيضًا ملف `.AppImage.zsync`؛ يحتاج التحزيم `zsyncmake` ولا يضيف تحديثات تلقائية داخل التطبيق. تدعم إعدادات المشروع Linux x86_64 وaarch64 فقط؛ Flutter المستخدم لا يدعم `armv7` أو `i686`، ولا تُعاد تسمية حزم 64 بت على أنها 32 بت.
 
 تجد التنزيلات المنشورة في [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). يستخدم مسار [Linux release](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) مشغّلات أصلية منفصلة للمعماريتين، ويختبر المشروع ويفحص ELF وبيانات الحزم وzsync وFlatpak قبل نشر 14 ملفًا و`SHA256SUMS`. لا يُنشر الإصدار إلا بعد نجاح المعماريتين؛ لا يُفترض توفر حزمة لمجرد وجود إعداد بنائها. تفاصيل التشغيل والتحقق في [ملاحظات البناء](BUILD_NOTES.md).
 
@@ -273,7 +273,7 @@ To generate DEB, RPM, Arch, general archive and AppImage packages, or a Flatpak 
 ./flatpak_linux.sh x64
 ```
 
-Packages are written to `dist/`, for example `atyaf-1.2.11-linux-x86_64.AppImage` and `atyaf-1.2.11-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
+Packages are written to `dist/`, for example `atyaf-1.2.12-linux-x86_64.AppImage` and `atyaf-1.2.12-linux-aarch64.deb`. An `.AppImage.zsync` file is also generated; packaging requires `zsyncmake` and does not add an automatic in-app updater. Only Linux x86_64 and aarch64 are supported. This Flutter toolchain does not support `armv7` or `i686`; 64-bit binaries are never renamed as 32-bit packages.
 
 Published downloads are under [GitHub Releases](https://github.com/Hossam-Majrashi/atyaf/releases). The [Linux release workflow](https://github.com/Hossam-Majrashi/atyaf/actions/workflows/release.yml) uses separate architecture-native runners, runs analysis/tests, and inspects ELF headers, package metadata, zsync and Flatpak before publishing 14 assets plus `SHA256SUMS`. Both architectures must pass before publication; a build configuration alone does not imply an available download. See [build notes](BUILD_NOTES.md) for operation and verification details.
 

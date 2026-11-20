@@ -346,6 +346,12 @@ A user-requested live test on installed Atyaf 1.2.11-1 reproduced the two-instan
 
 The same installed Atyaf then supervised exactly one MDM GUI process before/after the real browser download request; the host IPC endpoint matched that PID. The actual GUI transfer completed to the profile's private Downloads directory, with MDM Complete state and 8138323 bytes. SHA256 exactly matches `3da571ae8ead0e02c42d115b1d3b957e767357c5de41fe0b7edcc9097d2edc8e`; the original host copy remained unchanged. The connected instance was left running. Keyboard interaction used a user-approved temporary KDE portal session, which was closed, and temporary focus scripts were unloaded. No package installation/ARM64 execution, unrelated application shutdown or credential disclosure occurred. No new runtime code or build was required for this follow-up; see PROJECT_NOTES.md for details. Private live-test evidence/backups are ignored build/ files, never release assets.
 
+## 1.2.12 publication preparation
+
+The user requested 1.2.12+15 and explicitly authorized a replacement credential. GitHub repository push permission is verified. The private-FIFO operational helper holds the credential in memory only; no token is written to source, Git URLs/configuration, command arguments or packages. It should be revoked after publication. This supersedes the earlier missing-credential blockage, not the still-unverified hosted build/publication status.
+
+The desktop/Linux runtime code is unchanged from the successful real x86_64 Firefox/MDM flow and safe xrevive icon verification. Release notes explicitly require per-profile opt-in for shared MDM data after installation. Builds and analysis/tests run again for the new version; ARM64 publication requires an actual successful native hosted build and independent package verification. Existing installed applications, account data and running processes stay untouched, and private live-test evidence remains excluded.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
