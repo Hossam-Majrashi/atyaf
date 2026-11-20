@@ -340,6 +340,12 @@ Upload is blocked by unavailable GitHub authentication: Git's configured provide
 
 All 343 Flutter tests pass serially, with clean analysis, normalized localization/source-contract, formatting, Python compilation and diff checks. Thirteen Python reader boundary checks run through the Flutter suite. The real supplied xrevive AppImage yielded a validated 512×512 PNG without execution/mounting or a source checksum change. A native release-binary disposable-library smoke launched one approved Python IPC fixture and delivered an exact request through the actual MDM 0.5.2 native host, retaining isolated profile XDG paths, complete streams and genuine exit 0 without Atyaf errors. No browser, real download or MDM GUI was launched; user libraries/credentials/registrations and running applications remain untouched. See PROJECT_NOTES.md for the explicit data-sharing tradeoff and scope.
 
+## Actual installed MDM browser/download follow-up
+
+A user-requested live test on installed Atyaf 1.2.11-1 reproduced the two-instance issue with the real existing MDM profile, actual Firefox extension and the GitHub v1.2.10 aarch64 Arch asset. The profile still had an empty environment; merely installing the update does not opt profiles into shared MDM data. After a private profile backup and normal shutdown of only the test-created instances, the existing confirmed-helper environment setting was applied under the library lock, preserving all other records/fields and old isolated data.
+
+The same installed Atyaf then supervised exactly one MDM GUI process before/after the real browser download request; the host IPC endpoint matched that PID. The actual GUI transfer completed to the profile's private Downloads directory, with MDM Complete state and 8138323 bytes. SHA256 exactly matches `3da571ae8ead0e02c42d115b1d3b957e767357c5de41fe0b7edcc9097d2edc8e`; the original host copy remained unchanged. The connected instance was left running. Keyboard interaction used a user-approved temporary KDE portal session, which was closed, and temporary focus scripts were unloaded. No package installation/ARM64 execution, unrelated application shutdown or credential disclosure occurred. No new runtime code or build was required for this follow-up; see PROJECT_NOTES.md for details. Private live-test evidence/backups are ignored build/ files, never release assets.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
