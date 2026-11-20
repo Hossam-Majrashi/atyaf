@@ -516,6 +516,24 @@ abstract class AppLocalizations {
   /// **'Remove this item and its managed data? External files and custom paths are never deleted.'**
   String get deleteConfirm;
 
+  /// No description provided for @deleteApplicationConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this application and all its profiles, managed application files, settings, logs, default temporary files, shortcuts and registered startup/terminal commands? External programs and custom paths are preserved.'**
+  String get deleteApplicationConfirm;
+
+  /// No description provided for @libraryStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Library storage'**
+  String get libraryStorage;
+
+  /// No description provided for @libraryStorageHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The library now uses the atyaf directory. An old library is renamed when no other Atyaf instance has it open; close old instances and their background supervisors, then reopen. A small compatibility link preserves old absolute paths without duplicating data. Deletion removes managed files, not external programs or custom paths. Empty application folders left by older versions are cleaned automatically; nonempty unknown folders are preserved.'**
+  String get libraryStorageHelp;
+
   /// No description provided for @emptyLibrary.
   ///
   /// In en, this message translates to:

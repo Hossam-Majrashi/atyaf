@@ -278,6 +278,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Remove this item and its managed data? External files and custom paths are never deleted.';
 
   @override
+  String get deleteApplicationConfirm =>
+      'Delete this application and all its profiles, managed application files, settings, logs, default temporary files, shortcuts and registered startup/terminal commands? External programs and custom paths are preserved.';
+
+  @override
+  String get libraryStorage => 'Library storage';
+
+  @override
+  String get libraryStorageHelp =>
+      'The library now uses the atyaf directory. An old library is renamed when no other Atyaf instance has it open; close old instances and their background supervisors, then reopen. A small compatibility link preserves old absolute paths without duplicating data. Deletion removes managed files, not external programs or custom paths. Empty application folders left by older versions are cleaned automatically; nonempty unknown folders are preserved.';
+
+  @override
   String get emptyLibrary => 'Your library starts here';
 
   @override

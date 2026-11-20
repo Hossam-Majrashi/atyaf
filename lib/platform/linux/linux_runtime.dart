@@ -11,16 +11,62 @@ import 'linux_window_preferences.dart';
 import 'linux_user_directories.dart';
 
 class LinuxRuntime implements RuntimeService {
-  LinuxRuntime({Map<String, String>? environment})
+  LinuxRuntime({Map<String, String>? environment, bool legacyStorage = false})
     : host = Map.of(environment ?? Platform.environment) {
     final home = host['HOME'];
     if (home == null || !p.isAbsolute(home)) {
       throw StateError('HOME must be absolute');
     }
     dataHome = xdg('XDG_DATA_HOME', p.join(home, '.local', 'share'));
-    root = p.join(dataHome, 'com.h.atyaf');
+    root = p.join(dataHome, legacyStorage ? 'com.h.atyaf' : 'atyaf');
   }
   final Map<String, String> host;
+
+  bool get hasLegacyAlias {
+    final old = p.join(dataHome, 'com.h.atyaf');
+    try {
+      return root != old &&
+          FileSystemEntity.typeSync(old, followLinks: false) ==
+              FileSystemEntityType.link &&
+          Directory(old).resolveSymbolicLinksSync() ==
+              Directory(root).resolveSymbolicLinksSync();
+    } on FileSystemException {
+      return false;
+    }
+  }
+
+  // Retain the namespace of registered session startup files across a rename.
+  String get integrationIdentityRoot =>
+      hasLegacyAlias ? p.join(dataHome, 'com.h.atyaf') : root;
+
+  /// Only empty UUID directories are remnants we can identify without guessing
+  /// which nonempty files belong to an application. Never recurse or follow links.
+  Future<void> cleanupEmptyApplicationDirectories() async {
+    final collection = Directory(p.join(root, 'applications'));
+    if (await FileSystemEntity.type(collection.path, followLinks: false) !=
+        FileSystemEntityType.directory) {
+      return;
+    }
+    final canonicalRoot = await Directory(root).resolveSymbolicLinks();
+    if (await collection.resolveSymbolicLinks() !=
+        p.join(canonicalRoot, 'applications')) {
+      throw ArgumentError('Application collection escaped library');
+    }
+    await for (final item in collection.list(followLinks: false)) {
+      if (item is! Directory ||
+          !RegExp(r'^[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$')
+              .hasMatch(p.basename(item.path))) {
+        continue;
+      }
+      try {
+        await item
+            .delete(); // rmdir: nonempty directories are always preserved.
+      } on FileSystemException catch (error) {
+        if (![2, 39].contains(error.osError?.errorCode)) rethrow;
+      }
+    }
+  }
+
   final _windowPreferencesReady = <String>{};
 
   bool inheritsWindowPreferences(Profile profile) =>
@@ -114,7 +160,31 @@ finally:
   }
 
   @override
-  Future<void> cleanupTemporary(String id) => temporaryOperation(id, 'remove');
+  Future<void> cleanupTemporary(String id) async {
+    shortTemporary(id); // Validate profile identity and non-root ownership.
+    // Remove both generations of our deterministic default cache, never custom
+    // paths. A renamed library retains the old namespace via its checked alias.
+    final roots = {root, if (hasLegacyAlias) integrationIdentityRoot};
+    for (final namespace in roots) {
+      final child = const Uuid().v5(Namespace.url.value, '$namespace/$id');
+      profileRoot(id);
+      for (final base in ['/var/tmp/atyaf-$uid', '/tmp/atyaf-$uid']) {
+        final result = await LinuxCommands.run('/usr/bin/python3', [
+          '-c',
+          temporaryHelper,
+          base,
+          child,
+          'remove',
+        ]);
+        if (result.exitCode != 0) {
+          throw FileSystemException(
+            result.stderr.toString().trim(),
+            p.join(base, child),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Map<String, String> resolvedPaths(Profile profile) => {
@@ -314,6 +384,23 @@ finally:
       }
     }
     return results..sort();
+  }
+
+  @override
+  Future<void> deleteApplicationFiles(Application application) async {
+    final portable = application.portableRoot;
+    if (portable == null) {
+      return; // External executables are never ours to erase.
+    }
+    profileRoot(application.id); // Reject traversal in record IDs.
+    final container = p.join(root, 'applications', application.id);
+    // New imports own the whole ID directory, not merely its current version.
+    // Legacy portable records retain their exact validated deletion boundary.
+    await deleteManaged(
+      p.normalize(portable) == p.join(container, 'current')
+          ? container
+          : portable,
+    );
   }
 
   @override

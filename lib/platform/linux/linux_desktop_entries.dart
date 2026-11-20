@@ -84,6 +84,9 @@ class LinuxDesktopEntries
       autostartHelper,
       jsonEncode({
         'root': runtime.root,
+        'identityRoot': runtime is LinuxRuntime
+            ? (runtime as LinuxRuntime).integrationIdentityRoot
+            : runtime.root,
         'config': config,
         'profile': id,
         'operation': operation,

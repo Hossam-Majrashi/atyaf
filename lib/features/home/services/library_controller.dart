@@ -149,9 +149,7 @@ class LibraryController extends ChangeNotifier {
     for (final profile in items) {
       await _deleteProfile(profile);
     }
-    if (application.portableRoot != null) {
-      await runtime.deleteManaged(application.portableRoot!);
-    }
+    await runtime.deleteApplicationFiles(application);
     repository.removeApplication(application.id);
     notifyListeners();
   }

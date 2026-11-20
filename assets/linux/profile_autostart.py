@@ -42,7 +42,11 @@ def manage(request):
     operation = request['operation']
     if operation not in ('status', 'enable', 'disable'):
         raise Failure('invalid', operation)
-    filename = 'com.h.atyaf.' + hashlib.sha256(root.encode()).hexdigest()[:16] + '.profile-' + profile + '.desktop'
+    identity = request.get('identityRoot', root)
+    legacy = os.path.join(os.path.dirname(root), 'com.h.atyaf')
+    if identity != root and not (identity == legacy and os.path.islink(legacy) and os.path.realpath(legacy) == root):
+        raise Failure('invalid', 'Invalid library identity')
+    filename = 'com.h.atyaf.' + hashlib.sha256(identity.encode()).hexdigest()[:16] + '.profile-' + profile + '.desktop'
     root_fd = directory(root)
     lock, config_fd, target_fd = None, None, None
     temporary = None

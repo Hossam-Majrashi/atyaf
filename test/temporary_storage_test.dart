@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 void main() {
-  test('Fresh default avoids a partial legacy extraction without deleting it or bypassing approval', () async {
+  test('Fresh default preserves partial legacy extraction during launch; explicit cleanup removes both defaults without bypassing approval', () async {
     final temporary = await Directory.systemTemp.createTemp('atyaf-temp-');
     final runtime = LinuxRuntime(
       environment: {
@@ -100,7 +100,9 @@ print('complete output النهاية',file=sys.stderr)
       expect(repository.errors, isEmpty);
       await runtime.cleanupTemporary(id);
       expect(await Directory(current).exists(), isFalse);
-      expect(await marker.exists(), isTrue);
+      // Explicit deletion/cleanup now removes both managed default namespaces.
+      // Launching above still left the legacy partial extraction untouched.
+      expect(await marker.exists(), isFalse);
     } finally {
       await processes.waitForPendingExits();
       await runtime.cleanupTemporary(id);

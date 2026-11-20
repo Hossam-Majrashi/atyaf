@@ -21,8 +21,11 @@ Future<void> main(List<String> arguments) async {
   await windowManager.ensureInitialized();
   await windowManager.setMinimumSize(const Size(800, 600));
   await windowManager.setPreventClose(true);
-  final preferences = PreferencesService(await SharedPreferences.getInstance());
+  // Create/relocate the library before the preferences plugin selects its
+  // support path. On a fresh native install it can reuse the atyaf directory
+  // instead of creating an otherwise unnecessary application-ID directory.
   final library = await LinuxIntegration.initialize();
+  final preferences = PreferencesService(await SharedPreferences.getInstance());
   FlutterError.onError = (details) {
     library.reportError(details.exception, details.stack ?? StackTrace.current);
     FlutterError.presentError(details);

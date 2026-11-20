@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 import '../../features/home/services/library_controller.dart';
-import 'linux_runtime.dart';
+import 'linux_library_layout.dart';
 import 'linux_repository.dart';
 import 'linux_archives.dart';
 import 'linux_processes.dart';
@@ -36,7 +36,7 @@ final class LinuxIntegration {
         }
       }
     }
-    final runtime = LinuxRuntime(environment: hostEnvironment);
+    final runtime = await LinuxLibraryLayout.prepare(hostEnvironment);
     await Directory(runtime.root).create(recursive: true);
     await LinuxCommands.run('/usr/bin/chmod', ['700', '--', runtime.root]);
     final helper = '${runtime.root}/archive_helper.py';
@@ -74,6 +74,7 @@ final class LinuxIntegration {
       await rootBundle.loadString('assets/linux/profile_windows.py'),
     );
     final repository = LinuxRepository('${runtime.root}/library.sqlite');
+    await LinuxLibraryLayout.finish(runtime, repository);
     final processes = LinuxProcesses(
       runtime,
       repository,

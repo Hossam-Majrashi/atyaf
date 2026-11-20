@@ -85,7 +85,9 @@ class LinuxBackup implements BackupService {
         throw StateError('Unsupported backup');
       }
       final oldRoot = metadata['root'] as String;
-      String relocate(String path) => p.isWithin(oldRoot, path)
+      String relocate(String path) => p.equals(oldRoot, path)
+          ? runtime.root
+          : p.isWithin(oldRoot, path)
           ? p.join(runtime.root, p.relative(path, from: oldRoot))
           : path;
       imported = LinuxRepository('$staging/library.sqlite');

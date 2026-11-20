@@ -748,7 +748,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     enabled: !busy,
                     onSelected: (value) => perform(() async {
                       if (value == 'delete') {
-                        if (await confirm(l.delete, l.deleteConfirm)) {
+                        if (await confirm(
+                          l.delete,
+                          l.deleteApplicationConfirm,
+                        )) {
                           await library.deleteApplication(app);
                         }
                       } else if (value == 'update') {

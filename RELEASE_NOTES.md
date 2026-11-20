@@ -1,20 +1,20 @@
-# Atyaf 1.2.9 — أطياف
+# Atyaf 1.2.10 — أطياف
 
 ## العربية
 
-- إضافة «التشغيل عند تسجيل الدخول» لكل حساب في بطاقته وقائمته، مع تفعيل وتعطيل صريحين دون تشغيل فوري.
-- استدعاء أطياف بمعرّف الحساب ومكتبته عند بدء جلسة سطح المكتب بدل تشغيل AppImage مباشرة؛ تبقى إعدادات الحساب وعزل بياناته والموافقة ومنع التكرار والسجلات الكاملة فعّالة.
-- توضيح سبب عدم عمل خيار بدء التشغيل الداخلي عند كتابة ملفه داخل إعدادات معزولة، وخطر فتح البرنامج مباشرة ببيانات المستخدم العامة.
-- حماية ملفات بدء التشغيل الموجودة أو المعدّلة يدويًا، وإزالة التسجيلات المدارة عند حذف الحساب أو استعادة المكتبة. لا تُفعّل النسخ الاحتياطية برامج تلقائيًا.
+- تغيير مجلد تخزين المكتبة إلى `~/.local/share/atyaf` أو `$XDG_DATA_HOME/atyaf`، مع عرض المسار الفعلي في الإعدادات.
+- ترحيل المكتبة القديمة عند إغلاق النسخ التي تستخدمها، مع الحفاظ على الحسابات والبيانات والاختصارات والموافقات. يبقى رابط توافق صغير باسم `com.h.atyaf` للمسارات المطلقة القديمة دون تكرار الملفات؛ لا تُدمج مكتبتان موجودتان مسبقًا.
+- إصلاح حذف البرامج ليزيل مجلد `applications/<id>` كاملًا بدل ترك المجلد الأب بعد حذف `current`، مع حذف الحسابات والسجلات والملفات المؤقتة الافتراضية والاختصارات وأوامر الطرفية وتسجيلات بدء التشغيل المدارة التابعة لها.
+- تنظيف مجلدات UUID الفارغة التي تركتها الإصدارات القديمة تلقائيًا، مع الحفاظ على المجلدات المجهولة غير الفارغة والبرامج الخارجية والمسارات المخصصة.
 
 ## English
 
-- Add an explicit per-account **Start at login** action to account cards and menus, with enable/disable controls and no immediate launch.
-- Invoke Atyaf with the stable account ID and originating library at desktop-session login instead of launching AppImages directly. Saved settings, storage isolation, approval, duplicate checks and complete supervision remain in effect.
-- Explain why application-owned startup files inside isolated settings are invisible to the host desktop and how a direct executable launch can create another instance using normal user data.
-- Preserve existing or manually modified startup entries; remove registered entries on account deletion/library restore. Backups never silently enable startup.
+- Store the library under `~/.local/share/atyaf` or `$XDG_DATA_HOME/atyaf`, and show its actual path in Settings.
+- Rename an idle legacy library while preserving profiles, data, shortcuts and approvals. A small `com.h.atyaf` compatibility symlink keeps old absolute references working without duplicating files. Distinct existing libraries are never merged.
+- Delete the complete `applications/<id>` directory instead of leaving its parent behind after deleting `current`, together with associated profiles, logs, default temporary files and managed desktop/terminal/startup integration.
+- Automatically remove empty UUID directories left by older releases. Preserve unknown nonempty folders, external programs and custom data paths.
 
-**Scope / الحدود:** Startup requires a desktop session supporting XDG autostart, and occurs after login, not at early system boot. First or changed executables require normal approval. Direct launches outside Atyaf are not adopted or terminated. No data is merged/deleted and no historical unknown exit status is reconstructed. The supplied ArtCraft log does not establish a crash or Flatpak installer failure. / يتطلب التشغيل جلسة تدعم XDG autostart ويحدث بعد تسجيل الدخول. تبقى الموافقة على الملفات الجديدة أو المتغيّرة مطلوبة. لا تُتبنّى النسخ الخارجية أو تُوقف، ولا تُدمج أو تُحذف بياناتها أو تُستعاد رموز خروج قديمة مجهولة. لا يثبت سجل ArtCraft المرفق انهيارًا أو فشل مثبت Flatpak.
+**Migration / الترحيل:** Close old Atyaf instances and background supervisors before reopening the updated version; an open old library defers migration. Stop profiles before deleting them. The Linux/Flatpak application ID remains `com.h.atyaf`; only the library folder name changes. / أغلق النسخ القديمة ومشرفيها بالخلفية ثم افتح النسخة المحدّثة؛ يتأجل الترحيل إذا كانت المكتبة القديمة مفتوحة. أوقف الحسابات قبل حذفها. يتغير اسم مجلد البيانات فقط، لا معرّف التطبيق وFlatpak.
 
 ## Packages and verification / الحزم والتحقق
 

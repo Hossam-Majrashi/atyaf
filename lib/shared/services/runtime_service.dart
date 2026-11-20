@@ -15,4 +15,5 @@ abstract interface class RuntimeService {
   Future<void> prepare(Profile profile);
   Future<void> cleanupTemporary(String profileId);
   Future<void> deleteManaged(String path);
+  Future<void> deleteApplicationFiles(Application application);
 }
