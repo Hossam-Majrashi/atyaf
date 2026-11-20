@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../../features/desktop_entries/services/autostart_service.dart';
 import '../../features/desktop_entries/services/desktop_entry_service.dart';
+import '../../features/desktop_entries/services/login_arguments.dart';
 import '../../features/desktop_entries/services/terminal_command_service.dart';
 import '../../shared/models/library_models.dart';
 import '../../shared/services/runtime_service.dart';
@@ -61,7 +62,12 @@ class LinuxDesktopEntries
   Future<List<String>> removeTerminalCommands(String profileId) =>
       terminal.removeTerminalCommands(profileId);
 
-  Future<bool> _autostart(String operation, String id, {String? name}) async {
+  Future<Object?> _autostart(
+    String operation,
+    String id, {
+    String? name,
+    List<String> loginArguments = const [],
+  }) async {
     runtime.profileRoot(id);
     final host = runtime is LinuxRuntime
         ? (runtime as LinuxRuntime).host
@@ -79,6 +85,10 @@ class LinuxDesktopEntries
       ...launcher,
       '--launch-profile',
       id,
+      if (loginArguments.isNotEmpty) ...[
+        LoginArguments.option,
+        LoginArguments.encode(loginArguments),
+      ],
     ].map(quoteExec).join(' ');
     final result = await LinuxCommands.run('/usr/bin/python3', [
       autostartHelper,
@@ -103,19 +113,32 @@ class LinuxDesktopEntries
     if (response['error'] != null) {
       throw FileSystemException(response['error'] as String, config);
     }
-    return response['ok'] as bool;
+    return response['ok'];
   }
 
   @override
-  Future<bool> autostartEnabled(String profileId) =>
-      _autostart('status', profileId);
+  Future<bool> autostartEnabled(String profileId) async =>
+      await _autostart('status', profileId) as bool;
 
   @override
-  Future<void> setAutostart(Profile profile, bool enabled) async {
+  Future<List<String>?> autostartArguments(String profileId) async {
+    final state = await _autostart('details', profileId) as Map;
+    if (state['enabled'] == false) return null;
+    final token = state['arguments'] as String?;
+    return token == null ? const [] : LoginArguments.decode(token);
+  }
+
+  @override
+  Future<void> setAutostart(
+    Profile profile,
+    bool enabled, {
+    List<String> loginArguments = const [],
+  }) async {
     await _autostart(
       enabled ? 'enable' : 'disable',
       profile.id,
       name: profile.name,
+      loginArguments: enabled ? loginArguments : const [],
     );
   }
 

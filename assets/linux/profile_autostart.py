@@ -40,7 +40,7 @@ def manage(request):
             not re.fullmatch(r'[A-Za-z0-9-]{1,80}', profile)):
         raise Failure('invalid', profile)
     operation = request['operation']
-    if operation not in ('status', 'enable', 'disable'):
+    if operation not in ('status', 'details', 'enable', 'disable'):
         raise Failure('invalid', operation)
     identity = request.get('identityRoot', root)
     legacy = os.path.join(os.path.dirname(root), 'com.h.atyaf')
@@ -84,6 +84,13 @@ def manage(request):
             raise Failure('conflict', 'Existing or modified autostart entry preserved')
         if operation == 'status':
             return previous is not None
+        if operation == 'details':
+            # Read only the owned, hash-verified entry we generated. The
+            # optional payload is always the final token in our Exec line.
+            if previous is None:
+                return {'enabled': False}
+            match = re.search(rb'(?m)^Exec=[^\n]* "--login-arguments" "([A-Za-z0-9_-]+={0,2})"$', previous)
+            return {'enabled': True, 'arguments': match[1].decode('ascii') if match else None}
         if operation == 'disable' and previous is None and expected is None:
             return False
         content = request.get('content', '').encode()

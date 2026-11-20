@@ -6,12 +6,14 @@ import '../../shared/services/process_service.dart';
 /// until output and exit status are persisted; approval still uses the normal UI.
 Future<bool> launchDesktopShortcut(
   LibraryController library,
-  String profileId,
-) async {
+  String profileId, {
+  List<String> loginArguments = const [],
+}) async {
   final profile = library.repository.profiles.firstWhere(
     (profile) => profile.id == profileId,
   );
   Future<void> activateExisting() async {
+    if (loginArguments.isNotEmpty) return;
     final processes = library.processes;
     if (processes is ProfileWindowService) {
       await (processes as ProfileWindowService).activateWindow(profile.id);
@@ -29,7 +31,11 @@ Future<bool> launchDesktopShortcut(
     return false;
   }
   try {
-    await library.launcher.launch(profile, application);
+    await library.launcher.launch(
+      profile,
+      application,
+      loginArguments: loginArguments,
+    );
   } on ProfileAlreadyRunning {
     // Another supervisor won the launch race under the library lock.
     await activateExisting();

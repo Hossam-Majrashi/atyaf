@@ -2,6 +2,7 @@ import '../../../shared/models/library_models.dart';
 import '../../../shared/services/runtime_service.dart';
 import '../../../shared/services/process_service.dart';
 import '../../../shared/services/library_repository.dart';
+import '../../desktop_entries/services/login_arguments.dart';
 
 class LauncherService {
   LauncherService(this.repository, this.runtime, this.processes);
@@ -21,6 +22,7 @@ class LauncherService {
     Application application, {
     ExecutableReview? approval,
     bool restart = false,
+    List<String> loginArguments = const [],
   }) async {
     final trusted = approval == null
         ? profile
@@ -29,7 +31,16 @@ class LauncherService {
     if (restart) {
       await processes.restart(application, trusted);
     } else {
-      await processes.launch(application, trusted);
+      final launchProfile = loginArguments.isEmpty
+          ? trusted
+          : Profile.fromJson({
+              ...trusted.toJson(),
+              'arguments': LoginArguments.combine(
+                trusted.arguments,
+                loginArguments,
+              ),
+            });
+      await processes.launch(application, launchProfile);
     }
   }
 }

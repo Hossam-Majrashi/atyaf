@@ -1,6 +1,10 @@
 {
   "@@locale": "en",
   "autostart": "Start at login",
+  "autostartMinimized": "Start minimized",
+  "autostartMinimizedHelp": "At login only. Supported apps can start minimized or in the tray. Manual launches are unchanged.",
+  "autostartArguments": "Minimized launch arguments (JSON string array)",
+  "autostartArgumentsInvalid": "Enter the options your app uses to start minimized as a non-empty JSON string array.",
   "enableAutostart": "Enable startup",
   "disableAutostart": "Disable startup",
   "autostartEnabled": "This account is enabled at desktop login.",

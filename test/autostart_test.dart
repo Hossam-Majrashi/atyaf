@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:atyaf/core/l10n/app_localizations.dart';
+import 'package:atyaf/features/desktop_entries/services/login_arguments.dart';
 import 'package:atyaf/features/home/services/library_controller.dart';
 import 'package:atyaf/features/settings/services/preferences_service.dart';
 import 'package:atyaf/main.dart';
@@ -246,7 +247,52 @@ void main() {
       temporary.path,
       runtime.dataHome,
     ]);
+    const loginFlags = ['--start-minimized', 'اسم "%" \\ \$ ` ; \n', ''];
+    await service.setAutostart(profile, true, loginArguments: loginFlags);
+    expect(await service.autostartArguments(profile.id), loginFlags);
+    await capture.delete();
+    final minimizedResult = await Process.run('/usr/bin/gio', [
+      'launch',
+      (await startupFiles()).single.path,
+    ]);
+    expect(minimizedResult.exitCode, 0, reason: '${minimizedResult.stderr}');
+    for (var i = 0; i < 100 && !await capture.exists(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    final payload = jsonDecode(await capture.readAsString()) as List;
+    final argv = payload[0] as List;
+    expect(argv.take(3), [
+      '--launch-profile',
+      profile.id,
+      LoginArguments.option,
+    ]);
+    expect(LoginArguments.decode(argv[3] as String), loginFlags);
+    expect(payload.skip(1), [temporary.path, runtime.dataHome]);
+
+    final saved = await (await startupFiles()).single.readAsString();
+    await expectLater(
+      service.setAutostart(profile, true, loginArguments: ['--bad\x00flag']),
+      throwsFormatException,
+    );
+    expect(await (await startupFiles()).single.readAsString(), saved);
     expect(repository.history(profile.id), isEmpty);
+  });
+
+  test('Login flags do not accept malformed, empty or oversized payloads', () {
+    for (final input in [
+      '--start-minimized',
+      '[]',
+      '[1]',
+      '[""]',
+      r'["--not\u0000valid"]',
+      jsonEncode(['x' * 4096]),
+      jsonEncode(List.filled(33, 'x')),
+    ]) {
+      expect(() => LoginArguments.parse(input), throwsFormatException);
+    }
+    for (final input in ['?', 'A', 'Zg==', 'abcd' * 2000]) {
+      expect(() => LoginArguments.decode(input), throwsFormatException);
+    }
   });
 
   test('Helper rollback and unsafe input boundaries', () async {
@@ -276,6 +322,18 @@ void main() {
       testWidgets(
         'Explicit startup enable/disable and cancel $language $size',
         (tester) async {
+          final (applicationName, flags) = switch (size.width) {
+            800 => ('Vesktop', ['--start-minimized']),
+            1100 => ('Mister Download Manager', ['/startup']),
+            _ => ('Other app', ['--tray']),
+          };
+          repository.saveApplication(
+            Application(
+              id: 'app',
+              name: applicationName,
+              executable: '/usr/bin/true',
+            ),
+          );
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1;
           addTearDown(tester.view.resetPhysicalSize);
@@ -332,6 +390,78 @@ void main() {
           await tester.runAsync(() async {
             expect(await entries.autostartEnabled(profile.id), isTrue);
           });
+          final minimize = find.widgetWithText(
+            CheckboxListTile,
+            l.autostartMinimized,
+          );
+          final argField = find.descendant(
+            of: find.byType(AutostartDialog),
+            matching: find.byType(TextField),
+          );
+          Future<void> toggleMinimized() async {
+            await tester.ensureVisible(minimize);
+            await tester.tap(minimize);
+            await tester.pump();
+          }
+
+          Future<void> close() async {
+            await tester.tap(find.text(l.close));
+            await tester.pump(const Duration(milliseconds: 400));
+          }
+
+          await toggleMinimized();
+          expect(
+            tester.widget<TextField>(argField).controller!.text,
+            applicationName == 'Other app' ? '' : jsonEncode(flags),
+          );
+          await close();
+          await open();
+          expect(tester.widget<CheckboxListTile>(minimize).value, isFalse);
+          await toggleMinimized();
+          if (applicationName == 'Other app') {
+            await tester.tap(find.widgetWithText(FilledButton, l.save));
+            await tester.pump();
+            expect(find.text(l.autostartArgumentsInvalid), findsOneWidget);
+            await tester.enterText(argField, jsonEncode(flags));
+            await tester.pump();
+          }
+          await tester.tap(find.widgetWithText(FilledButton, l.save));
+          await wait(
+            tester,
+            () => find
+                .descendant(
+                  of: find.byType(AutostartDialog),
+                  matching: find.text(l.done),
+                )
+                .evaluate()
+                .isNotEmpty,
+          );
+          await tester.runAsync(() async {
+            expect(await entries.autostartArguments(profile.id), flags);
+          });
+          await close();
+          await open();
+          expect(tester.widget<CheckboxListTile>(minimize).value, isTrue);
+          expect(
+            tester.widget<TextField>(argField).controller!.text,
+            jsonEncode(flags),
+          );
+          await toggleMinimized();
+          await tester.tap(find.widgetWithText(FilledButton, l.save));
+          await wait(
+            tester,
+            () => find
+                .widgetWithText(FilledButton, l.disableAutostart)
+                .evaluate()
+                .any(
+                  (element) =>
+                      (element.widget as FilledButton).onPressed != null,
+                ),
+          );
+          await tester.runAsync(() async {
+            expect(await entries.autostartArguments(profile.id), isEmpty);
+          });
+
           await tester.tap(find.text(l.disableAutostart));
           await wait(
             tester,

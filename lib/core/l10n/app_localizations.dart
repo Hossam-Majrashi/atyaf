@@ -54,6 +54,30 @@ abstract class AppLocalizations {
   /// **'Start at login'**
   String get autostart;
 
+  /// No description provided for @autostartMinimized.
+  ///
+  /// In en, this message translates to:
+  /// **'Start minimized'**
+  String get autostartMinimized;
+
+  /// No description provided for @autostartMinimizedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'At login only. Supported apps can start minimized or in the tray. Manual launches are unchanged.'**
+  String get autostartMinimizedHelp;
+
+  /// No description provided for @autostartArguments.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimized launch arguments (JSON string array)'**
+  String get autostartArguments;
+
+  /// No description provided for @autostartArgumentsInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the options your app uses to start minimized as a non-empty JSON string array.'**
+  String get autostartArgumentsInvalid;
+
   /// No description provided for @enableAutostart.
   ///
   /// In en, this message translates to:

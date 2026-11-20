@@ -18,10 +18,14 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 static void first_frame_cb(MyApplication* self, FlView* view) {
   // Profile shortcuts supervise approved launches without a library window.
   // Dart explicitly shows the window if review or error handling is required.
-  if (self->dart_entrypoint_arguments != nullptr &&
-      g_strv_length(self->dart_entrypoint_arguments) == 2 &&
-      g_strcmp0(self->dart_entrypoint_arguments[0], "--launch-profile") == 0) {
-    return;
+  auto args = self->dart_entrypoint_arguments;
+  if (args != nullptr) {
+    const guint count = g_strv_length(args);
+    if ((count == 2 ||
+         (count == 4 && g_strcmp0(args[2], "--login-arguments") == 0)) &&
+        g_strcmp0(args[0], "--launch-profile") == 0) {
+      return;
+    }
   }
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
 }

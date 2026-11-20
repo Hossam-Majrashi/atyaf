@@ -13,6 +13,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get autostart => 'Start at login';
 
   @override
+  String get autostartMinimized => 'Start minimized';
+
+  @override
+  String get autostartMinimizedHelp =>
+      'At login only. Supported apps can start minimized or in the tray. Manual launches are unchanged.';
+
+  @override
+  String get autostartArguments =>
+      'Minimized launch arguments (JSON string array)';
+
+  @override
+  String get autostartArgumentsInvalid =>
+      'Enter the options your app uses to start minimized as a non-empty JSON string array.';
+
+  @override
   String get enableAutostart => 'Enable startup';
 
   @override

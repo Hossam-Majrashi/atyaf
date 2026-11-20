@@ -58,6 +58,8 @@
 
 من بطاقة الحساب أو قائمتها اختر **التشغيل عند تسجيل الدخول** ثم **تفعيل بدء التشغيل**. يُنشأ ملف في مجلد بدء تشغيل سطح المكتب المضيف يستدعي أطياف بمعرّف الحساب ومكتبته، لا ملف AppImage مباشرة. يعمل بعد تسجيل الدخول وليس قبل الجلسة، ويحافظ على العزل والموافقة ومنع تكرار التشغيل والسجلات. لا يؤدي التفعيل إلى التشغيل الفوري. عطّل الخيار من الحوار نفسه؛ الحذف والاستعادة يزيلان التسجيلات المدارة دون إعادة تفعيلها من النسخة الاحتياطية.
 
+فعّل **بدء التشغيل مصغّرًا** من الحوار نفسه إذا أردت تشغيل الحساب عند تسجيل الدخول دون فتح نافذته الرئيسية. يقترح أطياف `--start-minimized` لـ Vesktop و`/startup` لـ Mister Download Manager؛ للبرامج الأخرى أدخل الوسائط التي يدعمها البرنامج. يُطبّق ذلك عند تسجيل الدخول فقط، ولا يتغيّر التشغيل اليدوي. عرض نافذة مصغّرة أو أيقونة بجانب الساعة يعتمد على البرنامج.
+
 عطّل خيار بدء التشغيل داخل البرنامج نفسه لتجنب مسار تشغيل مستقل. ملفات `autostart` داخل إعدادات الحساب المعزولة لا يقرأها سطح المكتب المضيف. فتح الملف التنفيذي مباشرة يتجاوز أطياف وقد يفتح نسخة ببيانات المستخدم العامة؛ عمليات `--crash-monitor` قد تكون عمليات مساعدة وليست نوافذ إضافية. لا يوقف أطياف النسخ الخارجية ولا يدمج أو يحذف بياناتها. لا تُستبدل ملفات بدء التشغيل الموجودة أو المعدّلة يدويًا.
 
 ### التحديث الداخلي للبرامج
@@ -206,6 +208,8 @@ The screenshots are displayed in the Arabic section above:
 ### Start at login
 
 Choose **Start at login → Enable startup** on the account card or its menu. A host desktop-session autostart entry invokes Atyaf with the stable account ID and originating library, never the AppImage directly. It starts after desktop login, not before the session, and retains isolation, approval, duplicate checks and logging. Enabling does not launch now. Disable it in the same dialog; deletion and restore remove registered entries without recreating them from backups.
+
+Use **Start minimized** in the same dialog to request a minimized or tray-only login launch without changing manual launches. Atyaf suggests `--start-minimized` for Vesktop and `/startup` for Mister Download Manager; for other apps, enter their supported arguments. The application determines whether it starts minimized or in the tray.
 
 Disable the startup option inside the application to avoid an independent launch path. The host desktop does not read `autostart` files inside isolated profile settings. Direct executable launches bypass Atyaf and can create a separate instance using normal user data; `--crash-monitor` processes can be helpers rather than extra windows. Atyaf does not stop external instances or merge/delete their data. Existing or manually modified startup entries are preserved.
 

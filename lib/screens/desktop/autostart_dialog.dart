@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
 import '../../core/l10n/app_localizations.dart';
+import '../../features/desktop_entries/services/login_arguments.dart';
 import '../../features/home/services/library_controller.dart';
 import '../../shared/models/library_models.dart';
 import '../../shared/widgets/desktop_content.dart';
@@ -19,17 +23,72 @@ class AutostartDialog extends StatefulWidget {
 }
 
 class _AutostartDialogState extends State<AutostartDialog> {
-  bool busy = true, enabled = false;
+  final arguments = TextEditingController();
+  bool busy = true,
+      enabled = false,
+      minimized = false,
+      invalidArguments = false;
+  List<String> savedArguments = const [];
   String? error, notice;
+
+  bool get changed => minimized
+      ? savedArguments.isEmpty ||
+            arguments.text.trim() != jsonEncode(savedArguments)
+      : savedArguments.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    run(() async {
-      final value = await widget.library.autostart!.autostartEnabled(
-        widget.profile.id,
-      );
-      if (mounted) setState(() => enabled = value);
+    run(load);
+  }
+
+  @override
+  void dispose() {
+    arguments.dispose();
+    super.dispose();
+  }
+
+  Future<void> load() async {
+    final current = await widget.library.autostart!.autostartArguments(
+      widget.profile.id,
+    );
+    if (mounted) update(current);
+  }
+
+  void update(List<String>? current, {String? message}) {
+    setState(() {
+      enabled = current != null;
+      savedArguments = current ?? const [];
+      minimized = savedArguments.isNotEmpty;
+      arguments.text = minimized ? jsonEncode(savedArguments) : '';
+      invalidArguments = false;
+      notice = message;
+    });
+  }
+
+  void setMinimized(bool? value) {
+    setState(() {
+      minimized = value == true;
+      invalidArguments = false;
+      notice = null;
+      if (minimized && arguments.text.isEmpty) {
+        final app = widget.library.repository.applications
+            .where((app) => app.id == widget.profile.applicationId)
+            .firstOrNull;
+        if (app == null) return;
+        // Suggest only known app-specific flags, and keep them editable.
+        String appKey(String name) =>
+            name.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+        final identities = [
+          appKey(app.name),
+          appKey(p.basenameWithoutExtension(app.executable)),
+        ];
+        if (identities.contains('vesktop')) {
+          arguments.text = jsonEncode(['--start-minimized']);
+        } else if (identities.contains('misterdownloadmanager')) {
+          arguments.text = jsonEncode(['/startup']);
+        }
+      }
     });
   }
 
@@ -53,27 +112,42 @@ class _AutostartDialogState extends State<AutostartDialog> {
     }
   }
 
-  Future<void> save() => run(() async {
-    final next = !enabled;
-    await widget.library.repository.withExclusiveLock(() async {
-      final current = widget.library.repository.profiles.firstWhere(
-        (p) =>
-            p.id == widget.profile.id &&
-            p.applicationId == widget.profile.applicationId,
-      );
-      await widget.library.autostart!.setAutostart(current, next);
-    });
-    if (mounted) {
-      setState(() {
-        enabled = next;
-        notice = AppLocalizations.of(context).done;
-      });
+  Future<void> save(bool next) async {
+    var flags = const <String>[];
+    if (next && minimized) {
+      try {
+        flags = LoginArguments.parse(arguments.text);
+      } on FormatException {
+        setState(() {
+          invalidArguments = true;
+          notice = null;
+        });
+        return;
+      }
     }
-  });
+    await run(() async {
+      await widget.library.repository.withExclusiveLock(() async {
+        final current = widget.library.repository.profiles.firstWhere(
+          (p) =>
+              p.id == widget.profile.id &&
+              p.applicationId == widget.profile.applicationId,
+        );
+        await widget.library.autostart!.setAutostart(
+          current,
+          next,
+          loginArguments: flags,
+        );
+      });
+      if (mounted) {
+        update(next ? flags : null, message: AppLocalizations.of(context).done);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final editable = !busy && error == null;
     return DesktopDialog(
       title: l.autostart,
       actions: [
@@ -81,9 +155,18 @@ class _AutostartDialogState extends State<AutostartDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l.close),
         ),
+        if (enabled && changed)
+          TextButton(
+            onPressed: editable ? () => save(false) : null,
+            child: Text(l.disableAutostart),
+          ),
         FilledButton(
-          onPressed: busy || error != null ? null : save,
-          child: Text(enabled ? l.disableAutostart : l.enableAutostart),
+          onPressed: editable ? () => save(!enabled || changed) : null,
+          child: Text(
+            !enabled
+                ? l.enableAutostart
+                : (changed ? l.save : l.disableAutostart),
+          ),
         ),
       ],
       children: [
@@ -92,31 +175,55 @@ class _AutostartDialogState extends State<AutostartDialog> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 16),
-        Text(l.autostartHelp),
-        const SizedBox(height: 16),
-        Text(l.autostartIsolationHelp),
-        const SizedBox(height: 16),
         if (busy)
           const LinearProgressIndicator()
         else
           Text(enabled ? l.autostartEnabled : l.autostartDisabled),
-        if (notice != null) ...[const SizedBox(height: 16), Text(notice!)],
+        CheckboxListTile(
+          title: Text(l.autostartMinimized),
+          subtitle: Text(l.autostartMinimizedHelp),
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          value: minimized,
+          onChanged: editable ? setMinimized : null,
+        ),
+        if (minimized)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: TextField(
+              controller: arguments,
+              enabled: editable,
+              minLines: 1,
+              maxLines: 3,
+              textDirection: TextDirection.ltr,
+              decoration: InputDecoration(
+                labelText: l.autostartArguments,
+                errorText: invalidArguments
+                    ? l.autostartArgumentsInvalid
+                    : null,
+                errorMaxLines: 3,
+              ),
+              onChanged: (_) => setState(() {
+                invalidArguments = false;
+                notice = null;
+              }),
+            ),
+          ),
+        if (notice != null) ...[Text(notice!), const SizedBox(height: 16)],
         if (error != null) ...[
-          const SizedBox(height: 16),
           Text(
             error!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
           TextButton(
-            onPressed: () => run(() async {
-              final value = await widget.library.autostart!.autostartEnabled(
-                widget.profile.id,
-              );
-              if (mounted) setState(() => enabled = value);
-            }),
+            onPressed: busy ? null : () => run(load),
             child: Text(l.retry),
           ),
         ],
+        const SizedBox(height: 8),
+        Text(l.autostartHelp),
+        const SizedBox(height: 16),
+        Text(l.autostartIsolationHelp),
       ],
     );
   }

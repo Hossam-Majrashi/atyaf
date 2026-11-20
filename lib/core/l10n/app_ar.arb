@@ -1,6 +1,10 @@
 {
   "@@locale": "ar",
   "autostart": "التشغيل عند تسجيل الدخول",
+  "autostartMinimized": "بدء التشغيل مصغّرًا",
+  "autostartMinimizedHelp": "عند تسجيل الدخول فقط. قد يظهر البرنامج مصغّرًا أو بجانب الساعة إذا كان يدعم ذلك؛ التشغيل اليدوي لا يتغيّر.",
+  "autostartArguments": "وسائط التصغير (مصفوفة نصوص JSON)",
+  "autostartArgumentsInvalid": "أدخل وسيط التصغير الذي يدعمه برنامجك كمصفوفة نصوص JSON غير فارغة.",
   "enableAutostart": "تفعيل بدء التشغيل",
   "disableAutostart": "تعطيل بدء التشغيل",
   "autostartEnabled": "هذا الحساب مفعّل عند تسجيل الدخول إلى سطح المكتب.",

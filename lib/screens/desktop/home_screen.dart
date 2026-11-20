@@ -27,10 +27,12 @@ class HomeScreen extends StatefulWidget {
     required this.library,
     required this.preferences,
     this.launchProfileId,
+    this.loginArguments = const [],
   });
   final LibraryController library;
   final PreferencesService preferences;
   final String? launchProfileId;
+  final List<String> loginArguments;
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -48,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
             (v) => v.id == widget.launchProfileId,
           );
           library.select(profile.applicationId);
-          await launch(profile);
+          await launch(profile, loginArguments: widget.loginArguments);
         }),
       );
     }
@@ -463,7 +465,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> launch(Profile profile, {bool restart = false}) async {
+  Future<void> launch(
+    Profile profile, {
+    bool restart = false,
+    List<String> loginArguments = const [],
+  }) async {
     final app = library.repository.applications.firstWhere(
       (v) => v.id == profile.applicationId,
     );
@@ -505,6 +511,7 @@ class _HomeScreenState extends State<HomeScreen> {
       app,
       approval: review,
       restart: restart,
+      loginArguments: loginArguments,
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'core/l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
+import 'features/desktop_entries/services/login_arguments.dart';
 import 'features/home/services/library_controller.dart';
 import 'features/settings/services/preferences_service.dart';
 import 'platform/linux/linux_integration.dart';
@@ -36,10 +37,21 @@ Future<void> main(List<String> arguments) async {
     return true;
   };
   String? profileId;
-  if (arguments.length == 2 && arguments.first == '--launch-profile') {
+  var loginArguments = const <String>[];
+  final isLoginLaunch =
+      arguments.length == 4 && arguments[2] == LoginArguments.option;
+  if ((arguments.length == 2 || isLoginLaunch) &&
+      arguments.first == '--launch-profile') {
     profileId = arguments[1];
     try {
-      if (await launchDesktopShortcut(library, profileId)) {
+      if (isLoginLaunch) {
+        loginArguments = LoginArguments.decode(arguments[3]);
+      }
+      if (await launchDesktopShortcut(
+        library,
+        profileId,
+        loginArguments: loginArguments,
+      )) {
         library.dispose();
         exit(0);
       }
@@ -55,6 +67,7 @@ Future<void> main(List<String> arguments) async {
       preferences: preferences,
       library: library,
       launchProfileId: profileId,
+      loginArguments: loginArguments,
     ),
   );
   await windowManager.waitUntilReadyToShow(
@@ -72,11 +85,13 @@ class AtyafApp extends StatefulWidget {
     required this.preferences,
     required this.library,
     this.launchProfileId,
+    this.loginArguments = const [],
     this.manageWindow = true,
   });
   final PreferencesService preferences;
   final LibraryController library;
   final String? launchProfileId;
+  final List<String> loginArguments;
   final bool manageWindow;
   @override
   State<AtyafApp> createState() => _AtyafAppState();
@@ -157,6 +172,7 @@ class _AtyafAppState extends State<AtyafApp> with WindowListener {
               library: widget.library,
               preferences: widget.preferences,
               launchProfileId: widget.launchProfileId,
+              loginArguments: widget.loginArguments,
             )
           : OnboardingScreen(preferences: widget.preferences),
     ),

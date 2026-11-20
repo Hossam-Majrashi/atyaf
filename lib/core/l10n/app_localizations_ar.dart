@@ -13,6 +13,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get autostart => 'التشغيل عند تسجيل الدخول';
 
   @override
+  String get autostartMinimized => 'بدء التشغيل مصغّرًا';
+
+  @override
+  String get autostartMinimizedHelp =>
+      'عند تسجيل الدخول فقط. قد يظهر البرنامج مصغّرًا أو بجانب الساعة إذا كان يدعم ذلك؛ التشغيل اليدوي لا يتغيّر.';
+
+  @override
+  String get autostartArguments => 'وسائط التصغير (مصفوفة نصوص JSON)';
+
+  @override
+  String get autostartArgumentsInvalid =>
+      'أدخل وسيط التصغير الذي يدعمه برنامجك كمصفوفة نصوص JSON غير فارغة.';
+
+  @override
   String get enableAutostart => 'تفعيل بدء التشغيل';
 
   @override

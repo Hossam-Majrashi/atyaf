@@ -1348,6 +1348,15 @@ os._exit(0)
       repository.saveProfile(profile);
       await library.processes.launch(app, profile);
       final pid = library.processes.pidFor(profile.id);
+      expect(
+        await launchDesktopShortcut(
+          library,
+          profile.id,
+          loginArguments: ['--start-minimized'],
+        ),
+        isTrue,
+      );
+      expect(windows.calls.map((call) => call['activate']), [false]);
       expect(await launchDesktopShortcut(library, profile.id), isTrue);
       expect(library.processes.pidFor(profile.id), pid);
       expect(repository.history(profile.id).length, 1);
@@ -1358,6 +1367,82 @@ os._exit(0)
       await library.processes.waitForPendingExits();
       await (library.processes as LinuxProcesses).activateWindow(profile.id);
       expect(windows.calls, hasLength(2), reason: 'Do not activate stale PIDs');
+    },
+  );
+
+  test(
+    'Login-only flags reach an approved Linux process but not a manual launch',
+    () async {
+      const app = Application(
+        id: 'app',
+        name: 'Fixture',
+        executable: '/usr/bin/python3',
+      );
+      const ordinary = [
+        '-c',
+        'import json,os,sys; print(json.dumps([sys.argv[1:],os.environ["XDG_CONFIG_HOME"]])); print("stderr",file=sys.stderr)',
+        'regular',
+        '--',
+        'guest',
+      ];
+      final unapproved = Profile(
+        id: 'login',
+        applicationId: app.id,
+        name: 'Login',
+        arguments: ordinary,
+      );
+      repository.saveApplication(app);
+      repository.saveProfile(unapproved);
+      const flags = ['--start-minimized', '{profile}/إعدادات "special" %'];
+      expect(
+        await launchDesktopShortcut(
+          library,
+          unapproved.id,
+          loginArguments: flags,
+        ),
+        isFalse,
+      );
+      expect(repository.history(unapproved.id), isEmpty);
+      final approved = unapproved.trusted(
+        (await runtime.inspect(app.executable)).fingerprint,
+      );
+      repository.saveProfile(approved);
+      expect(
+        await launchDesktopShortcut(
+          library,
+          approved.id,
+          loginArguments: flags,
+        ),
+        isTrue,
+      );
+      expect(repository.profiles.single.toJson(), approved.toJson());
+
+      Future<void> check(List<String> args) async {
+        final record = repository.history(approved.id).first;
+        expect(record['exitCode'], 0);
+        expect(
+          jsonDecode(await File(record['stdout'] as String).readAsString()),
+          [args, '${runtime.profileRoot(approved.id)}/config'],
+        );
+        expect(
+          await File(record['stderr'] as String).readAsString(),
+          'stderr\n',
+        );
+      }
+
+      await check([
+        'regular',
+        '--start-minimized',
+        '${runtime.profileRoot(approved.id)}/إعدادات "special" %',
+        '--',
+        'guest',
+      ]);
+
+      await library.launcher.launch(approved, app);
+      await library.processes.waitForPendingExits();
+      await check(['regular', '--', 'guest']);
+      expect(repository.history(approved.id), hasLength(2));
+      expect(repository.profiles.single.toJson(), approved.toJson());
     },
   );
 
