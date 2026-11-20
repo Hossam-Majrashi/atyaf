@@ -352,6 +352,14 @@ The user requested 1.2.12+15 and explicitly authorized a replacement credential.
 
 The desktop/Linux runtime code is unchanged from the successful real x86_64 Firefox/MDM flow and safe xrevive icon verification. Release notes explicitly require per-profile opt-in for shared MDM data after installation. Builds and analysis/tests run again for the new version; ARM64 publication requires an actual successful native hosted build and independent package verification. Existing installed applications, account data and running processes stay untouched, and private live-test evidence remains excluded.
 
+## Published v1.2.12 verification
+
+Release https://github.com/Hossam-Majrashi/atyaf/releases/tag/v1.2.12 is public/latest, non-draft and non-prerelease. Immutable source is `1cfe94ce4f9c66206d90ef865a76726075daa066` (1.2.12+15). Hosted workflow https://github.com/Hossam-Majrashi/atyaf/actions/runs/44677735714 succeeded in all four jobs: analysis/full tests, native x86_64 packages including Flatpak, native aarch64 packages including Flatpak, and gated publication. All 15 expected files are present: seven per architecture and SHA256SUMS. Release description matches RELEASE_NOTES.md exactly.
+
+All public files were downloaded unauthenticated under `dist/github-v1.2.12`, verified against GitHub SHA256 digests and the fourteen-entry published checksum manifest, then both architecture sets passed independent ELF/package/metadata/zsync/Flatpak validation. No ARM64 application code was executed and no package was installed. Evidence is ignored build/ operational logs/metadata, not release assets. Actual local x86_64 native/Flatpak packaging and all seven local assets/checksums also pass; `dist/SHA256SUMS-before-1.2.12` preserves the previous manifest. All 343 local Flutter tests passed serially, with clean analysis and normalized source-contract/shell/diff checks. A new native release-binary disposable IPC smoke using the actual MDM native host again verifies one approved supervised fixture, exact URL, isolated remaining XDG paths, complete streams, true exit 0 and no Atyaf errors. The earlier real Firefox/MDM GUI download remains independently documented; no ARM64 graphical runtime claim is made.
+
+The exposed replacement credential should now be revoked. It was passed through private FIFOs into process memory only, never embedded in source, command arguments, Git configuration/URLs or assets. CI used its temporary repository token. Publication did not alter installed binaries, user libraries/accounts/credentials, browser registrations or running applications. Source tag stays immutable; verification-only documentation is pushed separately to main.
+
 ## Official references
 
 - https://docs.flutter.dev/platform-integration/linux/building
