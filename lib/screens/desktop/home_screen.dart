@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/l10n/app_localizations.dart';
+import '../../features/archives/services/archive_service.dart';
 import '../../features/home/services/library_controller.dart';
 import '../../shared/services/managed_storage_service.dart';
 import '../../shared/services/process_service.dart';
@@ -93,6 +94,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context).updateRunning)),
         );
+      }
+    } on UnsupportedArchiveFormat {
+      if (mounted) {
+        final l = AppLocalizations.of(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l.unsupportedPortableArchive)));
       }
     } catch (error, stack) {
       library.reportError(error, stack);
@@ -212,6 +220,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return result?.files.single.path;
   }
 
+  Future<String?> pickArchive() async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: AppLocalizations.of(context).archive,
+      type: FileType.custom,
+      allowedExtensions: ArchiveFormat.pickerExtensions,
+      allowMultiple: false,
+      withData: false,
+    );
+    return result?.files.single.path;
+  }
+
+  Future<String?> pickExecutable() async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: AppLocalizations.of(context).executable,
+      allowMultiple: false,
+      withData: false,
+    );
+    return result?.files.single.path;
+  }
+
   Future<void> add(String kind) async {
     final l = AppLocalizations.of(context);
     String? executable;
@@ -234,12 +262,9 @@ class _HomeScreenState extends State<HomeScreen> {
         staged = await library.storage.stageAppImage(path);
         executable = await chooseExecutable(staged);
       } else {
-        final result = await FilePicker.platform.pickFiles(
-          dialogTitle: kind == 'archive' ? l.archive : l.executable,
-          allowMultiple: false,
-          withData: false,
-        );
-        final path = result?.files.single.path;
+        final path = kind == 'archive'
+            ? await pickArchive()
+            : await pickExecutable();
         if (path == null) {
           return;
         }
@@ -357,11 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (kind == 'appimage') {
       path = await pickAppImage();
     } else {
-      path = (await FilePicker.platform.pickFiles(
-        dialogTitle: kind == 'executable' ? l.executable : l.archive,
-        allowMultiple: false,
-        withData: false,
-      ))?.files.single.path;
+      path = kind == 'archive' ? await pickArchive() : await pickExecutable();
     }
     if (path == null) {
       return;

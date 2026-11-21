@@ -110,7 +110,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get folderFormats => 'مجلد كامل يضم ملفات البرنامج';
 
   @override
-  String get archiveFormats => '.tar.gz · .tar.xz · .tar.zst';
+  String get archiveFormats =>
+      '.zip · .tar · .tar.gz (.tgz) · .tar.xz (.txz) · .tar.bz2 (.tbz2/.tbz) · .tar.zst (.tzst)';
+
+  @override
+  String get unsupportedPortableArchive =>
+      'نوع الملف غير مدعوم. استخدم أرشيف ZIP أو TAR، أو اختر «ملف AppImage» لملفات AppImage، أو فك ضغط الصيغ الأخرى واستورد مجلد البرنامج.';
+
+  @override
+  String get useNvidiaPrime => 'تفضيل بطاقة NVIDIA ‏(PRIME)';
+
+  @override
+  String get nvidiaPrimeConfirm =>
+      'استخدم هذا الخيار على جهاز ببطاقتين مع تعريف NVIDIA PRIME يعمل. يُضيف أو يستبدل متغيرين خاصّين بـ NVIDIA في حقل البيئة لهذا الحساب. احفظ وأعد تشغيل البرنامج لتطبيقه. للتراجع، استعد القيمتين السابقتين أو احذفهما. في PCSX2 اختر Vulkan وبطاقة NVIDIA من إعدادات الرسوميات. استخدام أقل من ١٠٠٪ طبيعي إذا كانت اللعبة تعمل بالفعل بسرعتها الكاملة.';
 
   @override
   String get appImageFormats => '.AppImage';

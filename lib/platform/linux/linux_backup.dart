@@ -71,7 +71,7 @@ class LinuxBackup implements BackupService {
         .toList();
     LinuxRepository? imported;
     try {
-      await archives.extractTo(source, staging);
+      await archives.extractTo(source, staging, allowZip: false);
       for (final name in ['backup.json', 'library.sqlite']) {
         if (await FileSystemEntity.type('$staging/$name', followLinks: false) !=
             FileSystemEntityType.file) {

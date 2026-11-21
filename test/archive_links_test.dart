@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:atyaf/features/applications/services/application_service.dart';
+import 'package:atyaf/features/archives/services/archive_service.dart';
 import 'package:atyaf/features/updates/services/update_service.dart';
 import 'package:atyaf/platform/linux/linux_archives.dart';
 import 'package:atyaf/platform/linux/linux_backup.dart';
@@ -41,15 +42,16 @@ void main() {
     List<Map<String, String>> members, {
     String format = 'gz',
     String name = 'fixture',
+    String? extension,
   }) async {
-    final path = '${temporary.path}/$name.tar.$format';
+    final path = '${temporary.path}/$name.${extension ?? 'tar.$format'}';
     final result = await Process.run('python3', [
       '-c',
       '''
 import io,json,subprocess,sys,tarfile
 path,fmt,members=sys.argv[1:]
 raw=path+'.raw' if fmt=='zst' else path
-with tarfile.open(raw,'w' if fmt=='zst' else 'w:'+fmt) as archive:
+with tarfile.open(raw,'w' if fmt in ('zst','tar') else 'w:'+fmt) as archive:
     for entry in json.loads(members):
         info=tarfile.TarInfo(entry['name'])
         if 'target' in entry:
@@ -158,6 +160,148 @@ if fmt=='zst':
       },
     );
   }
+
+  for (final (format, suffix) in [
+    ('tar', 'TAR'),
+    ('gz', 'tGz'),
+    ('xz', 'TxZ'),
+    ('bz2', 'tar.bz2'),
+    ('bz2', 'TbZ2'),
+    ('bz2', 'tbz'),
+    ('zst', 'tAr.ZsT'),
+    ('zst', 'TZST'),
+  ]) {
+    test(
+      'Archive suffix $suffix extracts with its corresponding codec',
+      () async {
+        final path = await fixture(
+          package('test'),
+          format: format,
+          extension: suffix,
+        );
+        final staged = await storage.stage(path, archive: true);
+        expect(staged.executables, contains('entry'));
+        expect(
+          await File('${staged.root}/assets/value').readAsString(),
+          'test',
+        );
+        await storage.discard(staged);
+      },
+    );
+  }
+
+  Future<File> zipFixture(String kind, {String value = 'original'}) async {
+    final path = '${temporary.path}/portable $value.ZiP';
+    final result = await Process.run('python3', [
+      '-c',
+      r'''
+import stat, sys, zipfile
+path, kind, value = sys.argv[1:]
+with zipfile.ZipFile(path, 'w') as archive:
+    def member(name, data, mode=0o100644):
+        info = zipfile.ZipInfo(name)
+        info.create_system = 3
+        info.external_attr = mode << 16
+        archive.writestr(info, data, compress_type=zipfile.ZIP_DEFLATED)
+    member('bin/', '', stat.S_IFDIR | 0o755)
+    member('bin/launcher', '#!/bin/sh\nprintf ' + value, 0o106755)
+    member('bin/data', value)
+    if kind == 'traversal': member('../outside', 'bad')
+    if kind == 'absolute': member('/outside', 'bad')
+    if kind == 'alias': member('./bin//data', 'bad')
+    if kind == 'link': member('bin/link', 'launcher', stat.S_IFLNK | 0o777)
+    if kind == 'pipe': member('pipe', '', stat.S_IFIFO | 0o755)
+    if kind == 'backslash': member(r'bin\bad', 'bad')
+''',
+      path,
+      kind,
+      value,
+    ]);
+    expect(result.exitCode, 0, reason: result.stderr.toString());
+    return File(path);
+  }
+
+  test(
+    'ZIP import and replacement preserve executable modes and profile data',
+    () async {
+      final source = await zipFixture('valid');
+      final original = await source.readAsBytes();
+      final stage = await storage.stage(source.path, archive: true);
+      expect(stage.executables, ['bin/launcher']);
+      expect(
+        (await File('${stage.root}/bin/launcher').stat()).mode & 0xfff,
+        0x1ed,
+      );
+      final app = await ApplicationService(
+        repository,
+        runtime,
+        storage,
+      ).addManaged('Portable program', stage, stage.executables.single);
+      await storage.discard(stage);
+      final profile = Profile(id: 'work', applicationId: app.id, name: 'Work');
+      repository.saveProfile(profile);
+      final next = await zipFixture('valid', value: 'replacement');
+      final replacement = await storage.stage(next.path, archive: true);
+      final updated = await UpdateService(
+        repository,
+        runtime,
+        processes,
+        storage,
+      ).update(app, replacement, replacement.executables.single);
+      await storage.discard(replacement);
+      expect(updated.id, app.id);
+      expect(
+        await File('${updated.portableRoot}/bin/data').readAsString(),
+        'replacement',
+      );
+      expect(repository.profiles.single.toJson(), profile.toJson());
+      expect(await source.readAsBytes(), original);
+    },
+  );
+
+  for (final kind in [
+    'traversal',
+    'absolute',
+    'alias',
+    'link',
+    'pipe',
+    'backslash',
+    'corrupt',
+  ]) {
+    test('ZIP rejects $kind and removes partial staging', () async {
+      final path = kind == 'corrupt'
+          ? (await File('${temporary.path}/corrupt.zip')
+                    .writeAsString('broken'))
+                .path
+          : (await zipFixture(kind)).path;
+      await expectLater(storage.stage(path, archive: true), throwsStateError);
+      expect(
+        await Directory('${runtime.root}/staging').list().toList(),
+        isEmpty,
+      );
+      expect(repository.applications, isEmpty);
+    });
+  }
+
+  test(
+    'Unsupported archives reject cleanly, and ZIP is not a backup format',
+    () async {
+      final unsupported = throwsA(isA<UnsupportedArchiveFormat>());
+      await expectLater(
+        storage.stage('${temporary.path}/test.7z', archive: true),
+        unsupported,
+      );
+      final backup = LinuxBackup(runtime, repository, archives, processes);
+      await expectLater(
+        backup.restore((await zipFixture('valid')).path),
+        unsupported,
+      );
+      expect(
+        await Directory('${runtime.root}/staging').list().toList(),
+        isEmpty,
+      );
+    },
+  );
 
   final attacks = <String, List<Map<String, String>>>{
     'host absolute target': [

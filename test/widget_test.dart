@@ -46,8 +46,8 @@ class DirectoryPicker extends FilePicker {
 
 class ArchivePicker extends FilePicker {
   ArchivePicker(this.path);
-  final String path;
-  int calls = 0;
+  String path;
+  final requests = <(FileType, List<String>?, bool, bool)>[];
 
   @override
   Future<FilePickerResult?> pickFiles({
@@ -64,9 +64,9 @@ class ArchivePicker extends FilePicker {
     bool lockParentWindow = false,
     bool readSequential = false,
   }) async {
-    calls++;
+    requests.add((type, allowedExtensions, allowMultiple, withData));
     return FilePickerResult([
-      PlatformFile(name: 'sirb.tar.gz', path: path, size: 1),
+      PlatformFile(name: path.split('/').last, path: path, size: 1),
     ]);
   }
 }
@@ -431,7 +431,7 @@ void main() {
             'language': language,
           });
           final l = lookupAppLocalizations(Locale(language));
-          final archive = '${temporary.path}/sirb.tar.gz';
+          final archive = '${temporary.path}/sirb.TgZ';
           final marker = File('${temporary.path}/must-not-launch');
           await tester.runAsync(() async {
             final root = '${temporary.path}/package';
@@ -453,7 +453,7 @@ void main() {
           });
           FilePickerLinux.registerWith();
           final previous = FilePicker.platform;
-          final picker = ArchivePicker(archive);
+          final picker = ArchivePicker('${temporary.path}/unsupported.7z');
           FilePicker.platform = picker;
           addTearDown(() => FilePicker.platform = previous);
           await tester.pumpWidget(
@@ -484,10 +484,24 @@ void main() {
           await tester.pumpAndSettle();
           await tester.tap(find.text(l.archive));
           await waitFor(
+            () => find.text(l.unsupportedPortableArchive).evaluate().isNotEmpty,
+          );
+          expect(repository.applications, isEmpty);
+          expect(repository.errors, isEmpty);
+          final (type, extensions, multiple, data) = picker.requests.single;
+          expect(type, FileType.custom);
+          expect(extensions, containsAll(['[zZ][iI][pP]', '[tT][gG][zZ]']));
+          expect(multiple, isFalse);
+          expect(data, isFalse);
+          picker.path = archive;
+          await tester.tap(find.byType(PopupMenuButton<String>).first);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text(l.archive));
+          await waitFor(
             () => find.text(l.chooseExecutable).evaluate().isNotEmpty,
           );
           expect(find.text(l.managedLinksHelp), findsOneWidget);
-          expect(picker.calls, 1);
+          expect(picker.requests.length, 2);
           await tester.ensureVisible(find.text('usr/bin/sirb'));
           await tester.tap(find.text('usr/bin/sirb'));
           await waitFor(

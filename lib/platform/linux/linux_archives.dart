@@ -21,14 +21,20 @@ class LinuxArchives implements ArchiveService {
   }
 
   @override
-  Future<void> extractTo(String source, String destination) async {
-    if (!['.tar.gz', '.tar.xz', '.tar.zst'].any(source.endsWith)) {
-      throw ArgumentError('Unsupported archive format');
+  Future<void> extractTo(
+    String source,
+    String destination, {
+    bool allowZip = true,
+  }) async {
+    final format = ArchiveFormat.forPath(source);
+    if (format == null || (!allowZip && format == ArchiveFormat.zip)) {
+      throw const UnsupportedArchiveFormat();
     }
     await invoke([
       'extract',
       LinuxCommands.hostPath(File(source).absolute.path),
       destination,
+      format.name,
     ]);
   }
 

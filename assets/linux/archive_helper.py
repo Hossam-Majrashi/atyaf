@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path, PurePosixPath
+import resource
 import shutil
 import stat
 import struct
@@ -10,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import zipfile
 
 LIMIT = 8 * 1024**3
 COUNT = 100000
@@ -24,12 +26,57 @@ def clean_name(name):
     return path
 
 
-def extract(source, destination):
+def extract_zip(source, root):
+    # Central-directory parsing happens before zipfile exposes member counts.
+    # Bound memory in this dedicated helper process even during that parse.
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    ceiling = 512 * 1024**2
+    resource.setrlimit(resource.RLIMIT_AS, (ceiling if soft < 0 else min(ceiling, soft), hard))
+    try:
+        with zipfile.ZipFile(source) as archive:
+            members = archive.infolist()
+            if len(members) > COUNT:
+                raise ValueError('Archive resource limit exceeded')
+            paths = set()
+            total = 0
+            for member in members:
+                name = clean_name(member.orig_filename)
+                is_directory = member.is_dir()
+                mode = (member.external_attr >> 16) if member.create_system == 3 else 0
+                if stat.S_IFMT(mode) not in (0, stat.S_IFDIR if is_directory else stat.S_IFREG):
+                    raise ValueError('Unsupported ZIP link or special file')
+                if name in paths:
+                    raise ValueError('Duplicate archive member')
+                paths.add(name)
+                if (str(name) == '.' and not is_directory) or (is_directory and member.file_size):
+                    raise ValueError('Invalid ZIP member')
+                total += member.file_size
+                if total > LIMIT:
+                    raise ValueError('Archive resource limit exceeded')
+                out = root / str(name)
+                if is_directory:
+                    out.mkdir(mode=0o700, parents=True, exist_ok=True)
+                else:
+                    out.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                    with archive.open(member) as inp, open(out, 'xb') as output:
+                        shutil.copyfileobj(inp, output, 1024 * 1024)
+                        if output.tell() != member.file_size:
+                            raise ValueError('Truncated ZIP member')
+                    os.chmod(out, (mode & 0o755) | 0o600)
+    except MemoryError as error:
+        raise ValueError('ZIP metadata exceeds memory limit') from error
+
+
+def extract(source, destination, archive_format):
     root = Path(destination).resolve()
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     temporary = None
     try:
-        if source.endswith('.tar.zst'):
+        if archive_format == 'zip':
+            extract_zip(source, root)
+            return
+        mode = {'tar': 'r:', 'gzip': 'r:gz', 'xz': 'r:xz', 'bzip2': 'r:bz2', 'zstd': 'r:'}[archive_format]
+        if archive_format == 'zstd':
             temporary = tempfile.TemporaryFile()
             proc = subprocess.Popen(['zstd', '-dc', '--', source], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             total = 0
@@ -50,7 +97,7 @@ def extract(source, destination):
                     proc.wait()
                 proc.stdout.close()
             temporary.seek(0)
-        with tarfile.open(source if temporary is None else None, fileobj=temporary, mode='r:*') as archive:
+        with tarfile.open(source if temporary is None else None, fileobj=temporary, mode=mode) as archive:
             members = []
             total = 0
             names = set()
@@ -251,8 +298,8 @@ def backup(root, snapshot, output):
 
 def main():
     os.umask(0o077)
-    if sys.argv[1] == 'extract' and len(sys.argv) == 4:
-        extract(sys.argv[2], sys.argv[3])
+    if sys.argv[1] == 'extract' and len(sys.argv) == 5:
+        extract(*sys.argv[2:])
     elif sys.argv[1] == 'copy' and len(sys.argv) == 4:
         copy_folder(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'appimage' and len(sys.argv) == 4:

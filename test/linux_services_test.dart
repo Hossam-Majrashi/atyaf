@@ -113,6 +113,55 @@ void main() {
     );
   });
 
+  test(
+    'NVIDIA PRIME environment is delivered only to the opted-in child',
+    () async {
+      final isolated = LinuxRuntime(environment: {'HOME': temporary.path});
+      final launches = LinuxProcesses(isolated, repository);
+      final file = File('${temporary.path}/graphics-probe');
+      await file.writeAsString(r'''#!/bin/sh
+printf '%s:%s\n' "${__NV_PRIME_RENDER_OFFLOAD:-unset}" "${__GLX_VENDOR_LIBRARY_NAME:-unset}"
+''');
+      expect(
+        (await Process.run('chmod', ['700', '--', file.path])).exitCode,
+        0,
+      );
+      final application = Application(
+        id: 'app',
+        name: 'Probe',
+        executable: file.path,
+      );
+      repository.saveApplication(application);
+      final review = await isolated.inspect(file.path);
+      for (final id in ['prime', 'ordinary']) {
+        final profile = Profile(
+          id: id,
+          applicationId: application.id,
+          name: id,
+          trustedFingerprint: review.fingerprint,
+          environment: id == 'prime'
+              ? {
+                  '__NV_PRIME_RENDER_OFFLOAD': '1',
+                  '__GLX_VENDOR_LIBRARY_NAME': 'nvidia',
+                }
+              : {},
+        );
+        repository.saveProfile(profile);
+        addTearDown(() => isolated.cleanupTemporary(id));
+        await launches.launch(application, profile);
+        await launches.drainLocalSupervision();
+        final record = repository.history(id).single;
+        expect(record['exitCode'], 0);
+        expect(
+          await File(record['stdout'] as String).readAsString(),
+          id == 'prime' ? '1:nvidia\n' : 'unset:unset\n',
+        );
+      }
+      expect(isolated.host.keys, isNot(contains('__NV_PRIME_RENDER_OFFLOAD')));
+      expect(isolated.host.keys, isNot(contains('__GLX_VENDOR_LIBRARY_NAME')));
+    },
+  );
+
   test('Host-data substitution is opt-in, relocatable and independent of profile paths', () {
     const ordinary = Profile(
       id: 'ordinary',

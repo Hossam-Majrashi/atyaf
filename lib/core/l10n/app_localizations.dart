@@ -237,8 +237,26 @@ abstract class AppLocalizations {
   /// No description provided for @archiveFormats.
   ///
   /// In en, this message translates to:
-  /// **'.tar.gz · .tar.xz · .tar.zst'**
+  /// **'.zip · .tar · .tar.gz (.tgz) · .tar.xz (.txz) · .tar.bz2 (.tbz2/.tbz) · .tar.zst (.tzst)'**
   String get archiveFormats;
+
+  /// No description provided for @unsupportedPortableArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported file type. Use a ZIP or TAR archive, choose AppImage for .AppImage files, or unpack other archives and import the application folder.'**
+  String get unsupportedPortableArchive;
+
+  /// No description provided for @useNvidiaPrime.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer NVIDIA (PRIME)'**
+  String get useNvidiaPrime;
+
+  /// No description provided for @nvidiaPrimeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this on a hybrid system with a working NVIDIA PRIME driver. It adds or replaces two NVIDIA entries in this profile’s Environment field. Save and restart to apply. To undo, restore or remove those entries. In PCSX2, choose Vulkan and the NVIDIA adapter in Graphics settings. GPU usage below 100% is normal when the game already runs at full speed.'**
+  String get nvidiaPrimeConfirm;
 
   /// No description provided for @appImageFormats.
   ///

@@ -235,6 +235,39 @@ class _ProfileEditorState extends State<ProfileEditor> {
     }
   }
 
+  Future<void> useNvidiaPrime() async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l.useNvidiaPrime),
+        content: SingleChildScrollView(child: Text(l.nvidiaPrimeConfirm)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l.next),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final env = Map<String, String>.from(jsonDecode(environment.text) as Map);
+      env.addAll({
+        '__NV_PRIME_RENDER_OFFLOAD': '1',
+        '__GLX_VENDOR_LIBRARY_NAME': 'nvidia',
+      });
+      environment.text = jsonEncode(env);
+      setState(() => error = null);
+    } catch (_) {
+      setState(() => error = l.invalidInput);
+    }
+  }
+
   Widget field(
     TextEditingController controller,
     String label, {
@@ -316,6 +349,15 @@ class _ProfileEditorState extends State<ProfileEditor> {
               icon: const Icon(Icons.desktop_windows_outlined),
               label: Text(l.useX11WindowControls),
             ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: OutlinedButton.icon(
+            onPressed: useNvidiaPrime,
+            icon: const Icon(Icons.memory_outlined),
+            label: Text(l.useNvidiaPrime),
           ),
         ),
         const SizedBox(height: 18),

@@ -39,7 +39,9 @@ final class LinuxIntegration {
     final runtime = await LinuxLibraryLayout.prepare(hostEnvironment);
     await Directory(runtime.root).create(recursive: true);
     await LinuxCommands.run('/usr/bin/chmod', ['700', '--', runtime.root]);
-    final helper = '${runtime.root}/archive_helper.py';
+    // The extractor now takes an explicit codec. Older live supervisors
+    // sharing the library may still use the original helper and arguments.
+    final helper = '${runtime.root}/archive_helper_v2.py';
     await LinuxCommands.writePrivateFile(
       helper,
       await rootBundle.loadString('assets/linux/archive_helper.py'),

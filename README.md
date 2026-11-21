@@ -41,7 +41,8 @@
 ### المميزات
 
 - **حسابات مستقلة:** مسارات منفصلة للإعدادات والبيانات والتخزين المؤقت والحالة والملفات المؤقتة، مع تخصيص وسائط التشغيل ومتغيرات البيئة ومجلد العمل.
-- **مكتبة برامج محلية:** حفظ نسخة مستقلة من ملف تنفيذي Linux ‏(ELF أو سكربت)، أو استيراد مجلد برنامج كامل أو أرشيف محمول بصيغة `.tar.gz` أو `.tar.xz` أو `.tar.zst` أو ملف `.AppImage`.
+- **مكتبة برامج محلية:** استورد ملفًا تنفيذيًا أو مجلد برنامج كاملًا أو ملف `.AppImage` أو أرشيف `.zip` / `.tar` (بما في ذلك Gzip وXZ وBzip2 وZstandard والامتدادات المختصرة مثل `.tgz`). لا تُستورد الروابط الرمزية من ZIP، وتحتاج الملفات التنفيذية فيه إلى صلاحيات تشغيل محفوظة داخل الأرشيف. للصيغ الأخرى، فك الضغط واستورد مجلد البرنامج.
+- **بطاقة NVIDIA:** من محرّر الحساب اختر **تفضيل بطاقة NVIDIA ‏(PRIME)** عند استخدام تعريف NVIDIA PRIME على جهاز ببطاقتين. احفظ ثم أعد التشغيل. في PCSX2 اختر Vulkan وبطاقة NVIDIA داخل إعدادات الرسوميات؛ لا تحتاج اللعبة إلى استهلاك 100٪ من البطاقة لتعمل بسرعتها الكاملة.
 - **بحث وتصفّح المكتبات الكبيرة:** ابحث عن اسم البرنامج مباشرةً من اللوحة الجانبية أو نافذة الاختيار في الأحجام الصغيرة. تُبنى عناصر البرامج والحسابات حسب الجزء الظاهر، مع تقليل قراءات قاعدة البيانات المتكررة.
 - **اختيار أيقونة من صور المشروع:** بعد اختيار الملف التنفيذي، تصفح صور المشروع ومجلداته الفرعية واختر أيقونة البرنامج، أو استخدم الاكتشاف التلقائي. يمكن تغييرها لاحقًا من «تعديل ← اختر أيقونة البرنامج». تُحفظ نسخة مستقلة مع المكتبة وتُحدّث أيقونات اختصارات الحسابات الموجودة عند الحفظ.
 - **تحديث يدوي دون فقد الحسابات:** استبدال ملفات البرنامج من ملف تنفيذي مستقل أو مجلد أو أرشيف أو AppImage جديد مع الحفاظ على الاسم والأيقونة المختارة وبيانات الحسابات وإعداداتها، والتراجع عن الاستبدال عند فشل العملية. لا توجد تحديثات شبكية أو تلقائية.
@@ -192,7 +193,8 @@ The screenshots are displayed in the Arabic section above:
 ### Features
 
 - **Independent profiles:** Separate config, data, cache, state and temporary paths, with configurable arguments, environment variables and working directory.
-- **Local application library:** Save an independent copy of a Linux executable (ELF or script), or import a complete application folder, a portable `.tar.gz`, `.tar.xz` or `.tar.zst` archive, or an `.AppImage` file.
+- **Local application library:** Import a Linux executable, a complete application folder, an `.AppImage` file, or a `.zip` or `.tar` archive (including Gzip, XZ, Bzip2, Zstandard and short suffixes like `.tgz`). ZIP links are not imported, and executable files need their Unix execute bits stored in the archive. For other formats, unpack first and import the application folder.
+- **NVIDIA graphics:** On a hybrid system with a working NVIDIA PRIME driver, use **Prefer NVIDIA (PRIME)** in the profile editor, save, then restart the application. In PCSX2, also select Vulkan and the NVIDIA adapter in Graphics settings. Full emulation speed does not require 100% GPU usage.
 - **Search and large libraries:** Find application names directly in the sidebar or compact-window selector. Application/profile rows are built on demand, with fewer repeated database reads.
 - **Choose an icon from project images:** After selecting an executable, browse images throughout the project and its subfolders, or keep automatic discovery. Change it later through **Edit → Choose an application icon**. A separate copy is saved with the library, and existing account shortcut icons are refreshed on save.
 - **Manual updates without losing profiles:** Replace application files from a standalone executable, new folder, archive or AppImage while preserving the name, chosen icon, profile data and settings, with rollback on failed replacement. No remote or automatic update checks.
